@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import useAuth from "../../hooks/useAuth";
 import Navbar from "../../components/Navbar";
@@ -24,36 +24,65 @@ const getImageUrl = (imageUrl) => {
   return `http://localhost:3001/${cleaned}`;
 };
 
+// Reverse geocode a single lat/lng — returns address string
+const reverseGeocode = async (lat, lng) => {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    const data = await res.json();
+    if (data && data.address) {
+      const a = data.address;
+      const parts = [
+        a.road || a.pedestrian || a.footway,
+        a.suburb || a.neighbourhood || a.quarter,
+        a.city || a.town || a.village || a.county,
+        a.postcode,
+        a.country,
+      ].filter(Boolean);
+      return parts.join(", ");
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+// Hook for single reverse geocode
 const useReverseGeocode = (lat, lng) => {
   const [address, setAddress] = useState(null);
   const [geocoding, setGeocoding] = useState(false);
-
   useEffect(() => {
     if (!lat || !lng) return;
     setGeocoding(true);
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.address) {
-          const a = data.address;
-          const parts = [
-            a.road || a.pedestrian || a.footway,
-            a.suburb || a.neighbourhood || a.quarter,
-            a.city || a.town || a.village || a.county,
-            a.postcode,
-            a.country,
-          ].filter(Boolean);
-          setAddress(parts.join(", "));
-        }
-        setGeocoding(false);
-      })
-      .catch(() => setGeocoding(false));
+    reverseGeocode(lat, lng).then(addr => {
+      setAddress(addr);
+      setGeocoding(false);
+    });
   }, [lat, lng]);
-
   return { address, geocoding };
 };
 
-const LocationDetail = ({ location }) => {
+// Download image via blob to force download
+const downloadImage = async (imageUrl, filename) => {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename || "emergency-report.jpg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Download failed:", err);
+  }
+};
+
+// Location tag on card — shows human-readable address
+const LocationTag = ({ location }) => {
   const { address, geocoding } = useReverseGeocode(
     location?.lat,
     location?.lng
@@ -61,41 +90,93 @@ const LocationDetail = ({ location }) => {
 
   if (!location?.area) return null;
 
-  return (
-    <div style={detailStyles.locationBox}>
-      <p style={detailStyles.sectionTitle}>📍 Location</p>
+  const displayText = location.lat
+    ? (geocoding ? "📍 Fetching location..." : address || location.area)
+    : location.area;
 
+  return (
+    <div style={tagStyles.tag}>
+      <span>📍</span>
+      <span style={tagStyles.text}>{displayText}</span>
+    </div>
+  );
+};
+
+const tagStyles = {
+  tag: {
+    display: "inline-flex", alignItems: "flex-start", gap: "5px",
+    marginTop: "8px",
+    backgroundColor: "rgba(0,255,136,0.06)",
+    border: "1px solid rgba(0,255,136,0.15)",
+    color: "#00ff88", fontSize: "11px",
+    padding: "5px 10px", borderRadius: "20px",
+    maxWidth: "100%",
+  },
+  text: {
+    lineHeight: "1.4",
+    wordBreak: "break-word",
+  },
+};
+
+// Location detail in right panel
+const LocationDetail = ({ location }) => {
+  const { address, geocoding } = useReverseGeocode(location?.lat, location?.lng);
+  const [copied, setCopied] = useState(false);
+
+  if (!location?.area) return null;
+
+  const handleCopy = () => {
+    const textToCopy = location.lat
+      ? `${location.lat}, ${location.lng}`
+      : location.area;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div style={locStyles.box}>
+      <p style={locStyles.title}>📍 Location</p>
       {location.lat ? (
         <>
           {geocoding ? (
-            <p style={detailStyles.geocodingText}>🔄 Fetching address...</p>
+            <p style={locStyles.geocoding}>🔄 Fetching address...</p>
           ) : address ? (
-            <p style={detailStyles.addressText}>{address}</p>
-          ) : (
-            <p style={detailStyles.coordsText}>
-              {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-            </p>
-          )}
-          <p style={detailStyles.coordsSmall}>
+            <p style={locStyles.address}>{address}</p>
+          ) : null}
+          <p style={locStyles.coordsSmall}>
             {location.lat?.toFixed(6)}, {location.lng?.toFixed(6)}
           </p>
+          <button
+            style={locStyles.copyBtn}
+            onClick={handleCopy}
+          >
+            {copied ? "✅ Copied!" : "📋 Copy Coordinates"}
+          </button>
           <a
             href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={detailStyles.mapsLink}
+            style={locStyles.link}
           >
             🗺️ Open in Google Maps →
           </a>
         </>
       ) : (
         <>
-          <p style={detailStyles.addressText}>{location.area}</p>
+          <p style={locStyles.address}>{location.area}</p>
+          <button
+            style={locStyles.copyBtn}
+            onClick={handleCopy}
+          >
+            {copied ? "✅ Copied!" : "📋 Copy Location"}
+          </button>
           <a
             href={`https://www.google.com/maps/search/${encodeURIComponent(location.area)}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={detailStyles.mapsLink}
+            style={locStyles.link}
           >
             🗺️ Search on Google Maps →
           </a>
@@ -105,30 +186,125 @@ const LocationDetail = ({ location }) => {
   );
 };
 
-const detailStyles = {
-  locationBox: {
+const locStyles = {
+  box: {
     backgroundColor: "rgba(0,255,136,0.05)",
     border: "1px solid rgba(0,255,136,0.15)",
     borderRadius: "10px", padding: "14px",
     marginBottom: "16px",
-    display: "flex", flexDirection: "column", gap: "6px",
+    display: "flex", flexDirection: "column", gap: "8px",
   },
-  sectionTitle: {
+  title: {
     color: "#555555", fontSize: "11px", fontWeight: "600",
-    textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px",
+    textTransform: "uppercase", letterSpacing: "0.5px",
   },
-  addressText: {
-    color: "#e0e0e0", fontSize: "13px",
-    fontWeight: "500", lineHeight: "1.5",
-  },
-  geocodingText: { color: "#888888", fontSize: "12px" },
-  coordsText: { color: "#aaaaaa", fontSize: "12px" },
+  address: { color: "#e0e0e0", fontSize: "13px", fontWeight: "500", lineHeight: "1.5" },
+  geocoding: { color: "#888888", fontSize: "12px" },
   coordsSmall: { color: "#444444", fontSize: "10px", fontFamily: "monospace" },
-  mapsLink: {
+  copyBtn: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    border: "1px solid #2a2a2a",
+    color: "#aaaaaa", padding: "6px 12px",
+    borderRadius: "7px", fontSize: "11px",
+    cursor: "pointer", fontFamily: "inherit",
+    textAlign: "left", transition: "all 0.3s ease",
+    width: "fit-content",
+  },
+  link: {
     color: "#00ff88", fontSize: "12px",
     fontWeight: "600", textDecoration: "none",
-    display: "inline-block", marginTop: "2px",
+    display: "inline-block",
   },
+};
+
+// Image Lightbox
+const ImageLightbox = ({ imageUrl, onClose }) => {
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  const filename = imageUrl?.split("/").pop() || "emergency-report.jpg";
+
+  return (
+    <div style={lightboxStyles.overlay} onClick={onClose}>
+      <div style={lightboxStyles.container} onClick={e => e.stopPropagation()}>
+        <div style={lightboxStyles.header}>
+          <span style={lightboxStyles.headerTitle}>📷 Report Image</span>
+          <div style={lightboxStyles.headerActions}>
+            <button
+              style={lightboxStyles.downloadBtn}
+              onClick={() => downloadImage(imageUrl, filename)}
+            >
+              ⬇️ Download
+            </button>
+            <button style={lightboxStyles.closeBtn} onClick={onClose}>✕</button>
+          </div>
+        </div>
+        <div style={lightboxStyles.imageWrap}>
+          <img src={imageUrl} alt="report full" style={lightboxStyles.image} />
+        </div>
+        <div style={lightboxStyles.footer}>
+          <span style={lightboxStyles.footerHint}>Press ESC or click outside to close</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const lightboxStyles = {
+  overlay: {
+    position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    zIndex: 9999,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    animation: "fadeIn 0.2s ease",
+  },
+  container: {
+    backgroundColor: "#111111",
+    border: "1px solid #222222",
+    borderRadius: "16px", overflow: "hidden",
+    maxWidth: "90vw", maxHeight: "90vh",
+    display: "flex", flexDirection: "column",
+    boxShadow: "0 40px 80px rgba(0,0,0,0.8)",
+  },
+  header: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    padding: "14px 20px",
+    backgroundColor: "#0d0d0d", borderBottom: "1px solid #1e1e1e",
+  },
+  headerTitle: { color: "#e0e0e0", fontSize: "14px", fontWeight: "600" },
+  headerActions: { display: "flex", gap: "10px", alignItems: "center" },
+  downloadBtn: {
+    backgroundColor: "rgba(0,255,136,0.1)",
+    border: "1px solid rgba(0,255,136,0.25)",
+    color: "#00ff88", padding: "6px 14px",
+    borderRadius: "7px", fontSize: "12px",
+    fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+  },
+  closeBtn: {
+    backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
+    color: "#888888", width: "30px", height: "30px",
+    borderRadius: "50%", cursor: "pointer",
+    fontSize: "13px", display: "flex",
+    alignItems: "center", justifyContent: "center",
+    fontFamily: "inherit",
+  },
+  imageWrap: {
+    overflow: "auto", display: "flex",
+    alignItems: "center", justifyContent: "center",
+    padding: "20px", maxHeight: "75vh",
+  },
+  image: {
+    maxWidth: "100%", maxHeight: "70vh",
+    objectFit: "contain", borderRadius: "8px",
+  },
+  footer: {
+    padding: "10px 20px", borderTop: "1px solid #1a1a1a",
+    backgroundColor: "#0d0d0d", textAlign: "center",
+  },
+  footerHint: { color: "#333333", fontSize: "11px" },
 };
 
 const EmergencyList = () => {
@@ -139,6 +315,7 @@ const EmergencyList = () => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -182,18 +359,25 @@ const EmergencyList = () => {
     <div style={styles.page}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
         .report-card { transition: all 0.3s ease !important; }
         .report-card:hover { transform: translateY(-2px) !important; border-color: rgba(0,255,136,0.2) !important; box-shadow: 0 12px 30px rgba(0,0,0,0.3) !important; }
         .report-card.selected { border-color: #00ff88 !important; background: rgba(0,255,136,0.04) !important; }
         .filter-btn { transition: all 0.3s ease !important; }
-        .filter-btn:hover { color: #00ff88 !important; border-color: rgba(0,255,136,0.3) !important; }
+        .filter-btn:hover { color: #00ff88 !important; }
         .new-btn { transition: all 0.3s ease !important; }
         .new-btn:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 20px rgba(0,255,136,0.3) !important; }
         input:focus { border-color: #00ff88 !important; box-shadow: 0 0 0 3px rgba(0,255,136,0.1) !important; outline: none !important; }
-        .maps-link:hover { opacity: 0.75 !important; }
+        .img-thumb:hover { opacity: 0.85 !important; }
+        .copy-btn:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
+        .action-btn:hover { background: rgba(0,255,136,0.2) !important; }
       `}</style>
+
+      {lightboxImage && (
+        <ImageLightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />
+      )}
 
       <Navbar />
       <div style={styles.layout}>
@@ -321,11 +505,10 @@ const EmergencyList = () => {
                     <p style={styles.cardDescription}>
                       {report.description.substring(0, 100)}{report.description.length > 100 ? "..." : ""}
                     </p>
+
+                    {/* Human-readable location tag */}
                     {report.location?.area && (
-                      <div style={styles.locationTag}>
-                        <span>📍</span>
-                        <span>{report.location.area}</span>
-                      </div>
+                      <LocationTag location={report.location} />
                     )}
                   </div>
                 );
@@ -373,7 +556,6 @@ const EmergencyList = () => {
                 </div>
               </div>
 
-              {/* Location with reverse geocoding */}
               <LocationDetail location={selectedReport.location} />
 
               <div style={styles.detailSection}>
@@ -384,18 +566,41 @@ const EmergencyList = () => {
               {selectedReport.imageUrl && (
                 <div style={styles.detailSection}>
                   <p style={styles.detailSectionTitle}>📷 Attached Image</p>
-                  <img
-                    src={getImageUrl(selectedReport.imageUrl)}
-                    alt="report"
-                    style={styles.detailImage}
-                    onError={e => {
-                      e.target.style.display = "none";
-                      e.target.nextSibling.style.display = "flex";
-                    }}
-                  />
-                  <div style={styles.imageFallback}>
-                    <span style={{ fontSize: "24px" }}>🖼️</span>
-                    <span style={{ fontSize: "12px", color: "#555" }}>Image unavailable</span>
+                  <div style={styles.imageThumbWrap}>
+                    <img
+                      className="img-thumb"
+                      src={getImageUrl(selectedReport.imageUrl)}
+                      alt="report"
+                      style={styles.detailImage}
+                      onClick={() => setLightboxImage(getImageUrl(selectedReport.imageUrl))}
+                      onError={e => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
+                      }}
+                    />
+                    <div style={styles.imageFallback}>
+                      <span style={{ fontSize: "24px" }}>🖼️</span>
+                      <span style={{ fontSize: "12px", color: "#555" }}>Image unavailable</span>
+                    </div>
+                  </div>
+                  <div style={styles.imageActions}>
+                    <button
+                      className="action-btn"
+                      style={styles.imageActionBtn}
+                      onClick={() => setLightboxImage(getImageUrl(selectedReport.imageUrl))}
+                    >
+                      🔍 View Full
+                    </button>
+                    <button
+                      className="action-btn"
+                      style={styles.imageActionBtn}
+                      onClick={() => downloadImage(
+                        getImageUrl(selectedReport.imageUrl),
+                        selectedReport.imageUrl.split("/").pop()
+                      )}
+                    >
+                      ⬇️ Download
+                    </button>
                   </div>
                 </div>
               )}
@@ -538,14 +743,6 @@ const styles = {
     padding: "4px 10px", borderRadius: "20px", letterSpacing: "0.3px",
   },
   cardDescription: { color: "#888888", fontSize: "13px", lineHeight: "1.6" },
-  locationTag: {
-    display: "inline-flex", alignItems: "center", gap: "5px",
-    marginTop: "8px",
-    backgroundColor: "rgba(0,255,136,0.06)",
-    border: "1px solid rgba(0,255,136,0.15)",
-    color: "#00ff88", fontSize: "11px",
-    padding: "3px 10px", borderRadius: "20px",
-  },
   rightPanel: {
     width: "300px", minWidth: "300px",
     backgroundColor: "#0d0d0d", padding: "28px 20px", overflowY: "auto",
@@ -583,9 +780,14 @@ const styles = {
     backgroundColor: "#1a1a1a", border: "1px solid #222222",
     borderRadius: "10px", padding: "14px",
   },
+  imageThumbWrap: {
+    position: "relative", cursor: "pointer",
+    borderRadius: "10px", overflow: "hidden", marginBottom: "8px",
+  },
   detailImage: {
     width: "100%", borderRadius: "10px",
-    objectFit: "cover", maxHeight: "180px", display: "block",
+    objectFit: "cover", maxHeight: "180px",
+    display: "block", transition: "opacity 0.3s ease",
   },
   imageFallback: {
     display: "none",
@@ -593,6 +795,18 @@ const styles = {
     borderRadius: "10px", padding: "20px",
     alignItems: "center", justifyContent: "center",
     flexDirection: "column", gap: "8px",
+  },
+  imageActions: {
+    display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px",
+  },
+  imageActionBtn: {
+    backgroundColor: "rgba(0,255,136,0.08)",
+    border: "1px solid rgba(0,255,136,0.2)",
+    color: "#00ff88", padding: "8px",
+    borderRadius: "8px", fontSize: "12px",
+    fontWeight: "600", cursor: "pointer",
+    fontFamily: "inherit", textAlign: "center",
+    transition: "all 0.3s ease",
   },
   detailMeta: {
     backgroundColor: "#1a1a1a", border: "1px solid #222222",
