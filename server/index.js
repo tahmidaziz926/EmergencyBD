@@ -1,24 +1,27 @@
-import express from "express";           // web server framework
-import dotenv from "dotenv";             // read .env file
-import cors from "cors";                 // allow frontend to connect
-import connectDB from "./src/config/db.js";          // connect to mongodb
-import authRoutes from "./src/routes/authRoutes.js";         // auth routes
-import emergencyRoutes from "./src/routes/emergencyRoutes.js"; // emergency routes
-import fundRoutes from "./src/routes/fundRoutes.js";         // fund routes
-import adminRoutes from "./src/routes/adminRoutes.js";       // admin routes
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import connectDB from "./src/config/db.js";
+import authRoutes from "./src/routes/authRoutes.js";
+import emergencyRoutes from "./src/routes/emergencyRoutes.js";
+import fundRoutes from "./src/routes/fundRoutes.js";
+import adminRoutes from "./src/routes/adminRoutes.js";
 
-dotenv.config();       // activate .env
-connectDB();           // connect to database
+dotenv.config();
+connectDB();
 
-const app = express(); // create express app
-app.use(cors());        // enable cors
-app.use(express.json()); // read json from requests
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-// register all routes
+// Related to the Image Upload — serves uploaded files
+app.use("/uploads", express.static("uploads"));
+
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/emergency", emergencyRoutes);
 app.use("/api/fund", fundRoutes);
 app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`SERVER STARTED on port ${PORT} 🚀`)); // start server
+app.listen(PORT, () => console.log(`SERVER STARTED on port ${PORT} 🚀`));
