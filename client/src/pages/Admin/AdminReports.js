@@ -77,7 +77,6 @@ const downloadImage = async (imageUrl, filename) => {
   }
 };
 
-// Location tag for card list
 const LocationTag = ({ location }) => {
   const { address, geocoding } = useReverseGeocode(location?.lat, location?.lng);
   if (!location?.area) return null;
@@ -86,7 +85,7 @@ const LocationTag = ({ location }) => {
     : location.area;
   return (
     <div style={tagStyles.tag}>
-      <span>📍</span>
+      <span>{"📍"}</span>
       <span style={tagStyles.text}>{displayText}</span>
     </div>
   );
@@ -99,13 +98,11 @@ const tagStyles = {
     backgroundColor: "rgba(0,255,136,0.06)",
     border: "1px solid rgba(0,255,136,0.15)",
     color: "#00ff88", fontSize: "11px",
-    padding: "5px 10px", borderRadius: "20px",
-    maxWidth: "100%",
+    padding: "5px 10px", borderRadius: "20px", maxWidth: "100%",
   },
   text: { lineHeight: "1.4", wordBreak: "break-word" },
 };
 
-// Location detail for right panel
 const LocationDetail = ({ location }) => {
   const { address, geocoding } = useReverseGeocode(location?.lat, location?.lng);
   const [copied, setCopied] = useState(false);
@@ -121,45 +118,48 @@ const LocationDetail = ({ location }) => {
     });
   };
 
+  if (location.lat) {
+    return (
+      <div style={locStyles.box}>
+        <p style={locStyles.title}>{"📍 Location"}</p>
+        {geocoding ? (
+          <p style={locStyles.geocoding}>{"🔄 Fetching address..."}</p>
+        ) : address ? (
+          <p style={locStyles.address}>{address}</p>
+        ) : null}
+        <p style={locStyles.coordsSmall}>
+          {location.lat.toFixed(6)}{", "}{location.lng.toFixed(6)}
+        </p>
+        <button style={locStyles.copyBtn} onClick={handleCopy}>
+          {copied ? "✅ Copied!" : "📋 Copy Coordinates"}
+        </button>
+        <a
+          href={"https://www.google.com/maps?q=" + location.lat + "," + location.lng}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={locStyles.link}
+        >
+          {"🗺️ Open in Google Maps"}
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div style={locStyles.box}>
-      <p style={locStyles.title}>📍 Location</p>
-      {location.lat ? (
-        <>
-          {geocoding ? (
-            <p style={locStyles.geocoding}>🔄 Fetching address...</p>
-          ) : address ? (
-            <p style={locStyles.address}>{address}</p>
-          ) : null}
-          <p style={locStyles.coordsSmall}>
-            {location.lat?.toFixed(6)}, {location.lng?.toFixed(6)}
-          </p>
-          <button style={locStyles.copyBtn} onClick={handleCopy}>
-            {copied ? "✅ Copied!" : "📋 Copy Location Coordinates"}
-          </button>
-          <a
-            href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
-            target="_blank" rel="noopener noreferrer"
-            style={locStyles.link}
-          >
-            🗺️ Open in Google Maps →
-          </a>
-        </>
-      ) : (
-        <>
-          <p style={locStyles.address}>{location.area}</p>
-          <button style={locStyles.copyBtn} onClick={handleCopy}>
-            {copied ? "✅ Copied!" : "📋 Copy Location"}
-          </button>
-          <a
-            href={`https://www.google.com/maps/search/${encodeURIComponent(location.area)}`}
-            target="_blank" rel="noopener noreferrer"
-            style={locStyles.link}
-          >
-            🗺️ Search on Google Maps →
-          </a>
-        </>
-      )}
+      <p style={locStyles.title}>{"📍 Location"}</p>
+      <p style={locStyles.address}>{location.area}</p>
+      <button style={locStyles.copyBtn} onClick={handleCopy}>
+        {copied ? "✅ Copied!" : "📋 Copy Location"}
+      </button>
+      <a
+        href={"https://www.google.com/maps/search/" + encodeURIComponent(location.area)}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={locStyles.link}
+      >
+        {"🗺️ Search on Google Maps"}
+      </a>
     </div>
   );
 };
@@ -194,33 +194,37 @@ const locStyles = {
   },
 };
 
-// Lightbox
 const ImageLightbox = ({ imageUrl, onClose }) => {
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const filename = imageUrl?.split("/").pop() || "emergency-report.jpg";
+  const filename = imageUrl ? imageUrl.split("/").pop() : "emergency-report.jpg";
 
   return (
     <div style={lbStyles.overlay} onClick={onClose}>
       <div style={lbStyles.container} onClick={e => e.stopPropagation()}>
         <div style={lbStyles.header}>
-          <span style={lbStyles.headerTitle}>📷 Report Image</span>
+          <span style={lbStyles.headerTitle}>{"📷 Report Image"}</span>
           <div style={lbStyles.headerActions}>
-            <button style={lbStyles.downloadBtn} onClick={() => downloadImage(imageUrl, filename)}>
-              ⬇️ Download
+            <button
+              style={lbStyles.downloadBtn}
+              onClick={() => downloadImage(imageUrl, filename)}
+            >
+              {"⬇️ Download"}
             </button>
-            <button style={lbStyles.closeBtn} onClick={onClose}>✕</button>
+            <button style={lbStyles.closeBtn} onClick={onClose}>{"✕"}</button>
           </div>
         </div>
         <div style={lbStyles.imageWrap}>
           <img src={imageUrl} alt="report" style={lbStyles.image} />
         </div>
         <div style={lbStyles.footer}>
-          <span style={lbStyles.hint}>Press ESC or click outside to close</span>
+          <span style={lbStyles.hint}>{"Press ESC or click outside to close"}</span>
         </div>
       </div>
     </div>
@@ -232,7 +236,6 @@ const lbStyles = {
     position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: "rgba(0,0,0,0.92)", zIndex: 9999,
     display: "flex", alignItems: "center", justifyContent: "center",
-    animation: "fadeIn 0.2s ease",
   },
   container: {
     backgroundColor: "#111111", border: "1px solid #222222",
@@ -243,20 +246,24 @@ const lbStyles = {
   },
   header: {
     display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "14px 20px", backgroundColor: "#0d0d0d", borderBottom: "1px solid #1e1e1e",
+    padding: "14px 20px", backgroundColor: "#0d0d0d",
+    borderBottom: "1px solid #1e1e1e",
   },
   headerTitle: { color: "#e0e0e0", fontSize: "14px", fontWeight: "600" },
   headerActions: { display: "flex", gap: "10px", alignItems: "center" },
   downloadBtn: {
-    backgroundColor: "rgba(0,255,136,0.1)", border: "1px solid rgba(0,255,136,0.25)",
-    color: "#00ff88", padding: "6px 14px", borderRadius: "7px",
-    fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+    backgroundColor: "rgba(0,255,136,0.1)",
+    border: "1px solid rgba(0,255,136,0.25)",
+    color: "#00ff88", padding: "6px 14px",
+    borderRadius: "7px", fontSize: "12px",
+    fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
   },
   closeBtn: {
     backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
     color: "#888888", width: "30px", height: "30px",
     borderRadius: "50%", cursor: "pointer", fontSize: "13px",
-    display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontFamily: "inherit",
   },
   imageWrap: {
     overflow: "auto", display: "flex",
@@ -279,21 +286,41 @@ const AdminReports = () => {
   const [search, setSearch] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const res = await axios.get("http://localhost:3001/api/admin/reports", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setReports(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-      setLoading(false);
-    };
     fetchReports();
-  }, [token]);
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/admin/reports", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setReports(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  const handleStatusUpdate = async (reportId, newStatus) => {
+    setUpdatingStatus(true);
+    try {
+      await axios.put(
+        `http://localhost:3001/api/admin/reports/${reportId}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setReports(prev =>
+        prev.map(r => r._id === reportId ? { ...r, status: newStatus } : r)
+      );
+      setSelectedReport(prev => ({ ...prev, status: newStatus }));
+    } catch (err) {
+      console.error("Status update failed:", err);
+    }
+    setUpdatingStatus(false);
+  };
 
   const filtered = reports.filter(r => {
     const matchFilter = filter === "all" || r.status === filter || r.emergencyType === filter;
@@ -308,7 +335,7 @@ const AdminReports = () => {
     <div style={styles.loadingScreen}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={styles.spinner}></div>
-      <p style={styles.loadingText}>Loading reports...</p>
+      <p style={styles.loadingText}>{"Loading reports..."}</p>
     </div>
   );
 
@@ -316,7 +343,6 @@ const AdminReports = () => {
     <div style={styles.page}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
         .report-card { transition: all 0.3s ease !important; }
@@ -327,7 +353,9 @@ const AdminReports = () => {
         input:focus { border-color: #00ff88 !important; outline: none !important; }
         .img-thumb:hover { opacity: 0.85 !important; }
         .action-btn:hover { background: rgba(0,255,136,0.2) !important; }
-        .copy-btn:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
+        .status-btn { transition: all 0.3s ease !important; }
+        .status-btn:hover { transform: translateY(-2px) !important; }
+        .status-btn:disabled { opacity: 0.5 !important; cursor: not-allowed !important; transform: none !important; }
       `}</style>
 
       {lightboxImage && (
@@ -340,11 +368,11 @@ const AdminReports = () => {
         {/* LEFT PANEL */}
         <div style={styles.leftPanel}>
           <div style={styles.leftHeader}>
-            <h2 style={styles.leftTitle}>All Reports</h2>
-            <p style={styles.leftSubtitle}>{reports.length} total</p>
+            <h2 style={styles.leftTitle}>{"All Reports"}</h2>
+            <p style={styles.leftSubtitle}>{reports.length}{" total"}</p>
           </div>
           <div style={styles.searchBox}>
-            <span>🔍</span>
+            <span>{"🔍"}</span>
             <input
               type="text"
               placeholder="Search..."
@@ -354,7 +382,7 @@ const AdminReports = () => {
             />
           </div>
           <div style={styles.filterSection}>
-            <p style={styles.filterTitle}>FILTER BY STATUS</p>
+            <p style={styles.filterTitle}>{"FILTER BY STATUS"}</p>
             {["all", "Pending", "Verified", "Resolved"].map(f => (
               <button
                 key={f}
@@ -362,13 +390,15 @@ const AdminReports = () => {
                 style={{ ...styles.filterBtn, ...(filter === f ? styles.filterActive : {}) }}
                 onClick={() => setFilter(f)}
               >
-                <span>{f === "all" ? "🗂 All" : `${statusConfig[f]?.icon} ${f}`}</span>
+                <span>
+                  {f === "all" ? "🗂 All" : statusConfig[f].icon + " " + f}
+                </span>
                 <span style={styles.filterCount}>
                   {f === "all" ? reports.length : reports.filter(r => r.status === f).length}
                 </span>
               </button>
             ))}
-            <p style={{ ...styles.filterTitle, marginTop: "16px" }}>FILTER BY TYPE</p>
+            <p style={{ ...styles.filterTitle, marginTop: "16px" }}>{"FILTER BY TYPE"}</p>
             {Object.entries(typeConfig).map(([key, val]) => (
               <button
                 key={key}
@@ -376,7 +406,7 @@ const AdminReports = () => {
                 style={{ ...styles.filterBtn, ...(filter === key ? styles.filterActive : {}) }}
                 onClick={() => setFilter(key)}
               >
-                <span>{val.icon} {val.label}</span>
+                <span>{val.icon + " " + val.label}</span>
                 <span style={styles.filterCount}>
                   {reports.filter(r => r.emergencyType === key).length}
                 </span>
@@ -389,8 +419,8 @@ const AdminReports = () => {
         <div style={styles.middlePanel}>
           {filtered.length === 0 ? (
             <div style={styles.emptyState}>
-              <div style={styles.emptyIcon}>📋</div>
-              <p style={styles.emptyTitle}>No reports found</p>
+              <div style={styles.emptyIcon}>{"📋"}</div>
+              <p style={styles.emptyTitle}>{"No reports found"}</p>
             </div>
           ) : (
             filtered.map((report, i) => {
@@ -399,29 +429,28 @@ const AdminReports = () => {
               return (
                 <div
                   key={report._id}
-                  className={`report-card ${selectedReport?._id === report._id ? "selected" : ""}`}
+                  className={"report-card" + (selectedReport?._id === report._id ? " selected" : "")}
                   style={{ ...styles.reportCard, animationDelay: `${i * 0.04}s` }}
                   onClick={() => setSelectedReport(selectedReport?._id === report._id ? null : report)}
                 >
                   <div style={styles.cardTop}>
                     <div style={styles.cardLeft}>
-                      <div style={{ ...styles.typeIconBox, backgroundColor: `${type.color}15` }}>
+                      <div style={{ ...styles.typeIconBox, backgroundColor: type.color + "15" }}>
                         {type.icon}
                       </div>
                       <div>
                         <p style={{ ...styles.cardType, color: type.color }}>{type.label}</p>
-                        <p style={styles.cardUser}>👤 {report.userId?.name || "Unknown"}</p>
+                        <p style={styles.cardUser}>{"👤 " + (report.userId?.name || "Unknown")}</p>
                       </div>
                     </div>
                     <span style={{ ...styles.statusBadge, color: status.color, backgroundColor: status.bg }}>
-                      {status.icon} {report.status}
+                      {status.icon + " " + report.status}
                     </span>
                   </div>
                   <p style={styles.cardDesc}>
-                    {report.description?.substring(0, 90)}...
+                    {(report.description || "").substring(0, 90) + "..."}
                   </p>
-                  {/* Human-readable location tag */}
-                  {report.location?.area && (
+                  {report.location && report.location.area && (
                     <LocationTag location={report.location} />
                   )}
                 </div>
@@ -435,45 +464,70 @@ const AdminReports = () => {
           {selectedReport ? (
             <div style={{ animation: "slideIn 0.3s ease" }}>
               <div style={styles.detailHeader}>
-                <h3 style={styles.detailTitle}>Report Details</h3>
-                <button style={styles.closeBtn} onClick={() => setSelectedReport(null)}>✕</button>
+                <h3 style={styles.detailTitle}>{"Report Details"}</h3>
+                <button style={styles.closeBtn} onClick={() => setSelectedReport(null)}>{"✕"}</button>
               </div>
 
               <div style={{
                 ...styles.typeBadge,
-                backgroundColor: `${typeConfig[selectedReport.emergencyType]?.color}10`,
-                border: `1px solid ${typeConfig[selectedReport.emergencyType]?.color}25`,
+                backgroundColor: (typeConfig[selectedReport.emergencyType]?.color || "#888") + "10",
+                border: "1px solid " + (typeConfig[selectedReport.emergencyType]?.color || "#888") + "25",
               }}>
-                <span style={{ fontSize: "26px" }}>{typeConfig[selectedReport.emergencyType]?.icon}</span>
+                <span style={{ fontSize: "26px" }}>
+                  {typeConfig[selectedReport.emergencyType]?.icon}
+                </span>
                 <div>
                   <p style={{ color: typeConfig[selectedReport.emergencyType]?.color, fontWeight: "700", fontSize: "14px" }}>
                     {typeConfig[selectedReport.emergencyType]?.label}
                   </p>
-                  <p style={styles.badgeSub}>Emergency Type</p>
+                  <p style={styles.badgeSub}>{"Emergency Type"}</p>
                 </div>
               </div>
 
-              <div style={{
-                ...styles.statusBadgeLarge,
-                backgroundColor: statusConfig[selectedReport.status]?.bg,
-                border: `1px solid ${statusConfig[selectedReport.status]?.color}30`,
-              }}>
-                <span style={{ fontSize: "18px" }}>{statusConfig[selectedReport.status]?.icon}</span>
-                <p style={{ color: statusConfig[selectedReport.status]?.color, fontWeight: "700", fontSize: "14px" }}>
-                  {selectedReport.status}
+              {/* STATUS UPDATE BOX */}
+              <div style={styles.statusUpdateBox}>
+                <p style={styles.statusUpdateTitle}>{"🔄 Update Status"}</p>
+                <p style={styles.statusCurrentText}>
+                  {"Current: "}
+                  <span style={{ color: statusConfig[selectedReport.status]?.color, fontWeight: "700" }}>
+                    {statusConfig[selectedReport.status]?.icon + " " + selectedReport.status}
+                  </span>
                 </p>
+                <div style={styles.statusBtns}>
+                  {["Pending", "Verified", "Resolved"].map((status) => (
+                    <button
+                      key={status}
+                      className="status-btn"
+                      disabled={selectedReport.status === status || updatingStatus}
+                      style={{
+                        ...styles.statusBtn,
+                        borderColor: statusConfig[status]?.color,
+                        color: selectedReport.status === status ? "#0a0a0a" : statusConfig[status]?.color,
+                        backgroundColor: selectedReport.status === status
+                          ? statusConfig[status]?.color
+                          : statusConfig[status]?.color + "12",
+                      }}
+                      onClick={() => handleStatusUpdate(selectedReport._id, status)}
+                    >
+                      {updatingStatus
+                        ? "..."
+                        : statusConfig[status]?.icon + " " + status + (selectedReport.status === status ? " ✓" : "")
+                      }
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <LocationDetail location={selectedReport.location} />
 
               <div style={styles.detailSection}>
-                <p style={styles.detailSectionTitle}>📝 Description</p>
+                <p style={styles.detailSectionTitle}>{"📝 Description"}</p>
                 <p style={styles.detailDesc}>{selectedReport.description}</p>
               </div>
 
               {selectedReport.imageUrl && (
                 <div style={styles.detailSection}>
-                  <p style={styles.detailSectionTitle}>📷 Attached Image</p>
+                  <p style={styles.detailSectionTitle}>{"📷 Attached Image"}</p>
                   <div style={styles.imageThumbWrap}>
                     <img
                       className="img-thumb"
@@ -487,8 +541,8 @@ const AdminReports = () => {
                       }}
                     />
                     <div style={styles.imageFallback}>
-                      <span style={{ fontSize: "24px" }}>🖼️</span>
-                      <span style={{ fontSize: "12px", color: "#555" }}>Image unavailable</span>
+                      <span style={{ fontSize: "24px" }}>{"🖼️"}</span>
+                      <span style={{ fontSize: "12px", color: "#555" }}>{"Image unavailable"}</span>
                     </div>
                   </div>
                   <div style={styles.imageActions}>
@@ -497,7 +551,7 @@ const AdminReports = () => {
                       style={styles.imageActionBtn}
                       onClick={() => setLightboxImage(getImageUrl(selectedReport.imageUrl))}
                     >
-                      🔍 View Full
+                      {"🔍 View Full"}
                     </button>
                     <button
                       className="action-btn"
@@ -507,7 +561,7 @@ const AdminReports = () => {
                         selectedReport.imageUrl.split("/").pop()
                       )}
                     >
-                      ⬇️ Download
+                      {"⬇️ Download"}
                     </button>
                   </div>
                 </div>
@@ -516,10 +570,20 @@ const AdminReports = () => {
               <div style={styles.detailMeta}>
                 {[
                   { label: "Reported By", value: selectedReport.userId?.name || "Unknown" },
-                  { label: "Contact", value: selectedReport.userId?.contactInfo || "—" },
-                  { label: "User Area", value: selectedReport.userId?.area || "—" },
-                  { label: "Submitted", value: new Date(selectedReport.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) },
-                  { label: "Time", value: new Date(selectedReport.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) },
+                  { label: "Contact", value: selectedReport.userId?.contactInfo || "N/A" },
+                  { label: "User Area", value: selectedReport.userId?.area || "N/A" },
+                  {
+                    label: "Submitted",
+                    value: new Date(selectedReport.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric", month: "long", day: "numeric"
+                    })
+                  },
+                  {
+                    label: "Time",
+                    value: new Date(selectedReport.createdAt).toLocaleTimeString("en-US", {
+                      hour: "2-digit", minute: "2-digit"
+                    })
+                  },
                 ].map((item, i) => (
                   <div key={i} style={styles.metaRow}>
                     <span style={styles.metaLabel}>{item.label}</span>
@@ -527,11 +591,12 @@ const AdminReports = () => {
                   </div>
                 ))}
               </div>
+
             </div>
           ) : (
             <div style={styles.detailEmpty}>
-              <div style={{ fontSize: "36px", opacity: 0.3 }}>👆</div>
-              <p style={styles.detailEmptyText}>Click a report to view details</p>
+              <div style={{ fontSize: "36px", opacity: 0.3 }}>{"👆"}</div>
+              <p style={styles.detailEmptyText}>{"Click a report to view details"}</p>
             </div>
           )}
         </div>
@@ -575,7 +640,10 @@ const styles = {
     outline: "none", fontFamily: "inherit",
   },
   filterSection: { display: "flex", flexDirection: "column", gap: "4px" },
-  filterTitle: { color: "#333333", fontSize: "10px", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" },
+  filterTitle: {
+    color: "#333333", fontSize: "10px",
+    fontWeight: "700", letterSpacing: "1px", marginBottom: "4px",
+  },
   filterBtn: {
     display: "flex", justifyContent: "space-between", alignItems: "center",
     padding: "9px 12px", borderRadius: "8px", border: "1px solid transparent",
@@ -603,7 +671,10 @@ const styles = {
     cursor: "pointer", animation: "fadeUp 0.4s ease both",
     border: "1px solid transparent", borderBottomColor: "#1a1a1a",
   },
-  cardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" },
+  cardTop: {
+    display: "flex", justifyContent: "space-between",
+    alignItems: "center", marginBottom: "10px",
+  },
   cardLeft: { display: "flex", alignItems: "center", gap: "12px" },
   typeIconBox: {
     width: "38px", height: "38px", borderRadius: "10px",
@@ -630,12 +701,24 @@ const styles = {
   },
   typeBadge: {
     display: "flex", alignItems: "center", gap: "14px",
-    borderRadius: "12px", padding: "16px", marginBottom: "12px",
+    borderRadius: "12px", padding: "16px", marginBottom: "16px",
   },
   badgeSub: { color: "#444444", fontSize: "11px", marginTop: "2px" },
-  statusBadgeLarge: {
-    display: "flex", alignItems: "center", gap: "10px",
-    borderRadius: "10px", padding: "12px 14px", marginBottom: "16px",
+  statusUpdateBox: {
+    backgroundColor: "#1a1a1a", border: "1px solid #222222",
+    borderRadius: "14px", padding: "18px",
+    marginBottom: "16px",
+    display: "flex", flexDirection: "column", gap: "12px",
+  },
+  statusUpdateTitle: { color: "#ffffff", fontSize: "13px", fontWeight: "700" },
+  statusCurrentText: { color: "#666666", fontSize: "12px" },
+  statusBtns: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" },
+  statusBtn: {
+    padding: "9px 6px", borderRadius: "8px",
+    border: "1px solid", fontSize: "11px",
+    fontWeight: "600", cursor: "pointer",
+    fontFamily: "inherit", textAlign: "center",
+    transition: "all 0.3s ease",
   },
   detailSection: { marginBottom: "16px" },
   detailSectionTitle: {
