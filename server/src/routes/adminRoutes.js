@@ -3,6 +3,7 @@ import {
   getAllReports,
   getAllFundRequests,
   updateReportStatus,
+  getFilteredReports,
 } from "../controllers/adminController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import adminMiddleware from "../middleware/adminMiddleware.js";
@@ -11,6 +12,10 @@ const router = express.Router();
 
 // Get all reports
 router.get("/reports", authMiddleware, adminMiddleware, getAllReports);
+
+// Filter reports by type, location, date
+// ⚠️ MUST be above /reports/:id/status so Express doesn't treat "filter" as an id
+router.get("/reports/filter", authMiddleware, adminMiddleware, getFilteredReports);
 
 // Get all fund requests
 router.get("/fund-requests", authMiddleware, adminMiddleware, getAllFundRequests);

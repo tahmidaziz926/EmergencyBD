@@ -52,3 +52,37 @@ export const updateReportStatus = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+// Filter reports by type, location (area), or date
+export const getFilteredReports = async (req, res) => {
+  try {
+    const { emergencyType, area, startDate, endDate } = req.query;
+
+    const filter = {};
+
+    if (emergencyType) {
+      filter.emergencyType = emergencyType;
+    }
+
+    if (area) {
+      filter["location.area"] = { $regex: area, $options: "i" };
+    }
+
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    const reports = await EmergencyReport.find(filter)
+      .populate("userId", "name email contactInfo area")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(reports);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
