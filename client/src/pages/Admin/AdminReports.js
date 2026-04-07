@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import useAuth from "../../hooks/useAuth";
 import Navbar from "../../components/Navbar";
@@ -94,8 +94,7 @@ const LocationTag = ({ location }) => {
 const tagStyles = {
   tag: {
     display: "inline-flex", alignItems: "flex-start", gap: "5px",
-    marginTop: "8px",
-    backgroundColor: "rgba(0,255,136,0.06)",
+    marginTop: "8px", backgroundColor: "rgba(0,255,136,0.06)",
     border: "1px solid rgba(0,255,136,0.15)",
     color: "#00ff88", fontSize: "11px",
     padding: "5px 10px", borderRadius: "20px", maxWidth: "100%",
@@ -196,9 +195,7 @@ const locStyles = {
 
 const ImageLightbox = ({ imageUrl, onClose }) => {
   useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
@@ -211,10 +208,7 @@ const ImageLightbox = ({ imageUrl, onClose }) => {
         <div style={lbStyles.header}>
           <span style={lbStyles.headerTitle}>{"📷 Report Image"}</span>
           <div style={lbStyles.headerActions}>
-            <button
-              style={lbStyles.downloadBtn}
-              onClick={() => downloadImage(imageUrl, filename)}
-            >
+            <button style={lbStyles.downloadBtn} onClick={() => downloadImage(imageUrl, filename)}>
               {"⬇️ Download"}
             </button>
             <button style={lbStyles.closeBtn} onClick={onClose}>{"✕"}</button>
@@ -278,30 +272,72 @@ const lbStyles = {
   hint: { color: "#333333", fontSize: "11px" },
 };
 
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+
 const AdminReports = () => {
   const { token } = useAuth();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const [activeTab, setActiveTab] = useState("all");
+  const [quickFilter, setQuickFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterArea, setFilterArea] = useState("");
+  const [filterStart, setFilterStart] = useState("");
+  const [filterEnd, setFilterEnd] = useState("");
+  const [filtering, setFiltering] = useState(false);
+  const [filterApplied, setFilterApplied] = useState(false);
 
   useEffect(() => {
     fetchReports();
   }, []);
 
   const fetchReports = async () => {
+    setLoading(true);
     try {
       const res = await axios.get("http://localhost:3001/api/admin/reports", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       setReports(res.data);
     } catch (err) {
       console.error(err);
     }
     setLoading(false);
+  };
+
+  const handleApplyFilter = useCallback(async () => {
+    setFiltering(true);
+    setFilterApplied(false);
+    try {
+      const params = {};
+      if (filterType) params.emergencyType = filterType;
+      if (filterArea.trim()) params.area = filterArea.trim();
+      if (filterStart) params.startDate = filterStart;
+      if (filterEnd) params.endDate = filterEnd;
+
+      const res = await axios.get("http://localhost:3001/api/admin/reports/filter", {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      setReports(res.data);
+      setFilterApplied(true);
+    } catch (err) {
+      console.error("Filter failed:", err);
+    }
+    setFiltering(false);
+  }, [filterType, filterArea, filterStart, filterEnd, token]);
+
+  const handleClearFilter = () => {
+    setFilterType("");
+    setFilterArea("");
+    setFilterStart("");
+    setFilterEnd("");
+    setFilterApplied(false);
+    fetchReports();
   };
 
   const handleStatusUpdate = async (reportId, newStatus) => {
@@ -322,13 +358,13 @@ const AdminReports = () => {
     setUpdatingStatus(false);
   };
 
-  const filtered = reports.filter(r => {
-    const matchFilter = filter === "all" || r.status === filter || r.emergencyType === filter;
+  const displayed = reports.filter(r => {
+    const matchQuick = quickFilter === "all" || r.status === quickFilter || r.emergencyType === quickFilter;
     const matchSearch =
       (r.description || "").toLowerCase().includes(search.toLowerCase()) ||
       (r.emergencyType || "").toLowerCase().includes(search.toLowerCase()) ||
       (r.userId?.name || "").toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
+    return matchQuick && matchSearch;
   });
 
   if (loading) return (
@@ -350,12 +386,16 @@ const AdminReports = () => {
         .report-card.selected { border-color: #00ff88 !important; background: rgba(0,255,136,0.04) !important; }
         .filter-btn { transition: all 0.3s ease !important; }
         .filter-btn:hover { color: #00ff88 !important; }
-        input:focus { border-color: #00ff88 !important; outline: none !important; }
+        .tab-btn { transition: all 0.2s ease !important; }
+        .tab-btn:hover { color: #00ff88 !important; }
+        input:focus, select:focus { border-color: #00ff88 !important; outline: none !important; }
         .img-thumb:hover { opacity: 0.85 !important; }
         .action-btn:hover { background: rgba(0,255,136,0.2) !important; }
         .status-btn { transition: all 0.3s ease !important; }
         .status-btn:hover { transform: translateY(-2px) !important; }
         .status-btn:disabled { opacity: 0.5 !important; cursor: not-allowed !important; transform: none !important; }
+        .apply-btn:hover { background: rgba(0,255,136,0.25) !important; }
+        .clear-btn:hover { border-color: #ff6b6b !important; color: #ff6b6b !important; }
       `}</style>
 
       {lightboxImage && (
@@ -365,65 +405,168 @@ const AdminReports = () => {
       <Navbar />
       <div style={styles.layout}>
 
-        {/* LEFT PANEL */}
+        {/* ── LEFT PANEL ── */}
         <div style={styles.leftPanel}>
           <div style={styles.leftHeader}>
             <h2 style={styles.leftTitle}>{"All Reports"}</h2>
-            <p style={styles.leftSubtitle}>{reports.length}{" total"}</p>
+            <p style={styles.leftSubtitle}>
+              {reports.length}{filterApplied ? " filtered" : " total"}
+            </p>
           </div>
-          <div style={styles.searchBox}>
-            <span>{"🔍"}</span>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={styles.searchInput}
-            />
+
+          {/* Tab switcher */}
+          <div style={styles.tabRow}>
+            <button
+              className="tab-btn"
+              style={{ ...styles.tabBtn, ...(activeTab === "all" ? styles.tabActive : {}) }}
+              onClick={() => setActiveTab("all")}
+            >
+              {"🗂 Browse"}
+            </button>
+            <button
+              className="tab-btn"
+              style={{ ...styles.tabBtn, ...(activeTab === "filter" ? styles.tabActive : {}) }}
+              onClick={() => setActiveTab("filter")}
+            >
+              {"🔎 Filter"}
+            </button>
           </div>
-          <div style={styles.filterSection}>
-            <p style={styles.filterTitle}>{"FILTER BY STATUS"}</p>
-            {["all", "Pending", "Verified", "Resolved"].map(f => (
-              <button
-                key={f}
-                className="filter-btn"
-                style={{ ...styles.filterBtn, ...(filter === f ? styles.filterActive : {}) }}
-                onClick={() => setFilter(f)}
+
+          {/* ── BROWSE TAB ── */}
+          {activeTab === "all" && (
+            <>
+              <div style={styles.searchBox}>
+                <span>{"🔍"}</span>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={styles.searchInput}
+                />
+              </div>
+              <div style={styles.filterSection}>
+                <p style={styles.filterTitle}>{"FILTER BY STATUS"}</p>
+                {["all", "Pending", "Verified", "Resolved"].map(f => (
+                  <button
+                    key={f}
+                    className="filter-btn"
+                    style={{ ...styles.filterBtn, ...(quickFilter === f ? styles.filterActive : {}) }}
+                    onClick={() => setQuickFilter(f)}
+                  >
+                    <span>{f === "all" ? "🗂 All" : statusConfig[f].icon + " " + f}</span>
+                    <span style={styles.filterCount}>
+                      {f === "all" ? reports.length : reports.filter(r => r.status === f).length}
+                    </span>
+                  </button>
+                ))}
+                <p style={{ ...styles.filterTitle, marginTop: "16px" }}>{"FILTER BY TYPE"}</p>
+                {Object.entries(typeConfig).map(([key, val]) => (
+                  <button
+                    key={key}
+                    className="filter-btn"
+                    style={{ ...styles.filterBtn, ...(quickFilter === key ? styles.filterActive : {}) }}
+                    onClick={() => setQuickFilter(key)}
+                  >
+                    <span>{val.icon + " " + val.label}</span>
+                    <span style={styles.filterCount}>
+                      {reports.filter(r => r.emergencyType === key).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ── FILTER TAB ── */}
+          {activeTab === "filter" && (
+            <div style={styles.filterPanel}>
+              <p style={styles.filterTitle}>{"EMERGENCY TYPE"}</p>
+              <select
+                value={filterType}
+                onChange={e => setFilterType(e.target.value)}
+                style={styles.select}
               >
-                <span>
-                  {f === "all" ? "🗂 All" : statusConfig[f].icon + " " + f}
-                </span>
-                <span style={styles.filterCount}>
-                  {f === "all" ? reports.length : reports.filter(r => r.status === f).length}
-                </span>
-              </button>
-            ))}
-            <p style={{ ...styles.filterTitle, marginTop: "16px" }}>{"FILTER BY TYPE"}</p>
-            {Object.entries(typeConfig).map(([key, val]) => (
+                <option value="">All Types</option>
+                {Object.entries(typeConfig).map(([key, val]) => (
+                  <option key={key} value={key}>{val.icon + " " + val.label}</option>
+                ))}
+              </select>
+
+              <p style={{ ...styles.filterTitle, marginTop: "14px" }}>{"LOCATION / AREA"}</p>
+              <input
+                type="text"
+                placeholder="e.g. Dhaka, Mirpur..."
+                value={filterArea}
+                onChange={e => setFilterArea(e.target.value)}
+                style={styles.filterInput}
+              />
+
+              <p style={{ ...styles.filterTitle, marginTop: "14px" }}>{"DATE RANGE"}</p>
+              <div style={styles.dateRow}>
+                <div style={styles.dateField}>
+                  <label style={styles.dateLabel}>{"From"}</label>
+                  <input
+                    type="date"
+                    value={filterStart}
+                    onChange={e => setFilterStart(e.target.value)}
+                    style={styles.dateInput}
+                  />
+                </div>
+                <div style={styles.dateField}>
+                  <label style={styles.dateLabel}>{"To"}</label>
+                  <input
+                    type="date"
+                    value={filterEnd}
+                    onChange={e => setFilterEnd(e.target.value)}
+                    style={styles.dateInput}
+                  />
+                </div>
+              </div>
+
               <button
-                key={key}
-                className="filter-btn"
-                style={{ ...styles.filterBtn, ...(filter === key ? styles.filterActive : {}) }}
-                onClick={() => setFilter(key)}
+                className="apply-btn"
+                style={styles.applyBtn}
+                onClick={handleApplyFilter}
+                disabled={filtering}
               >
-                <span>{val.icon + " " + val.label}</span>
-                <span style={styles.filterCount}>
-                  {reports.filter(r => r.emergencyType === key).length}
-                </span>
+                {filtering ? "⏳ Filtering..." : "🔎 Apply Filter"}
               </button>
-            ))}
-          </div>
+
+              {filterApplied && (
+                <button
+                  className="clear-btn"
+                  style={styles.clearBtn}
+                  onClick={handleClearFilter}
+                >
+                  {"✕ Clear & Reset"}
+                </button>
+              )}
+
+              {filterApplied && (
+                <div style={styles.filterResultBadge}>
+                  <span style={{ color: "#00ff88", fontWeight: "700" }}>{reports.length}</span>
+                  <span style={{ color: "#555555", fontSize: "11px" }}>{" results found"}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* MIDDLE PANEL */}
+        {/* ── MIDDLE PANEL ── */}
         <div style={styles.middlePanel}>
-          {filtered.length === 0 ? (
+          {displayed.length === 0 ? (
             <div style={styles.emptyState}>
               <div style={styles.emptyIcon}>{"📋"}</div>
               <p style={styles.emptyTitle}>{"No reports found"}</p>
+              {filterApplied && (
+                <p style={{ color: "#444444", fontSize: "12px" }}>
+                  {"Try adjusting your filters"}
+                </p>
+              )}
             </div>
           ) : (
-            filtered.map((report, i) => {
+            displayed.map((report, i) => {
               const type = typeConfig[report.emergencyType] || {};
               const status = statusConfig[report.status] || {};
               return (
@@ -450,7 +593,7 @@ const AdminReports = () => {
                   <p style={styles.cardDesc}>
                     {(report.description || "").substring(0, 90) + "..."}
                   </p>
-                  {report.location && report.location.area && (
+                  {report.location?.area && (
                     <LocationTag location={report.location} />
                   )}
                 </div>
@@ -459,7 +602,7 @@ const AdminReports = () => {
           )}
         </div>
 
-        {/* RIGHT PANEL */}
+        {/* ── RIGHT PANEL ── */}
         <div style={styles.rightPanel}>
           {selectedReport ? (
             <div style={{ animation: "slideIn 0.3s ease" }}>
@@ -484,7 +627,6 @@ const AdminReports = () => {
                 </div>
               </div>
 
-              {/* STATUS UPDATE BOX */}
               <div style={styles.statusUpdateBox}>
                 <p style={styles.statusUpdateTitle}>{"🔄 Update Status"}</p>
                 <p style={styles.statusCurrentText}>
@@ -509,10 +651,7 @@ const AdminReports = () => {
                       }}
                       onClick={() => handleStatusUpdate(selectedReport._id, status)}
                     >
-                      {updatingStatus
-                        ? "..."
-                        : statusConfig[status]?.icon + " " + status + (selectedReport.status === status ? " ✓" : "")
-                      }
+                      {updatingStatus ? "..." : statusConfig[status]?.icon + " " + status + (selectedReport.status === status ? " ✓" : "")}
                     </button>
                   ))}
                 </div>
@@ -591,7 +730,6 @@ const AdminReports = () => {
                   </div>
                 ))}
               </div>
-
             </div>
           ) : (
             <div style={styles.detailEmpty}>
@@ -629,6 +767,17 @@ const styles = {
   leftHeader: { paddingBottom: "16px", borderBottom: "1px solid #1e1e1e" },
   leftTitle: { color: "#ffffff", fontSize: "18px", fontWeight: "700" },
   leftSubtitle: { color: "#555555", fontSize: "12px", marginTop: "4px" },
+  tabRow: {
+    display: "flex", gap: "6px",
+    backgroundColor: "#1a1a1a", borderRadius: "10px", padding: "4px",
+  },
+  tabBtn: {
+    flex: 1, padding: "8px", borderRadius: "7px",
+    border: "none", backgroundColor: "transparent",
+    color: "#555555", fontSize: "12px", fontWeight: "600",
+    cursor: "pointer", fontFamily: "inherit",
+  },
+  tabActive: { backgroundColor: "#222222", color: "#00ff88" },
   searchBox: {
     display: "flex", alignItems: "center", gap: "10px",
     backgroundColor: "#1a1a1a", border: "1px solid #222222",
@@ -640,6 +789,7 @@ const styles = {
     outline: "none", fontFamily: "inherit",
   },
   filterSection: { display: "flex", flexDirection: "column", gap: "4px" },
+  filterPanel: { display: "flex", flexDirection: "column", gap: "6px" },
   filterTitle: {
     color: "#333333", fontSize: "10px",
     fontWeight: "700", letterSpacing: "1px", marginBottom: "4px",
@@ -657,6 +807,53 @@ const styles = {
   filterCount: {
     backgroundColor: "#222222", color: "#555555",
     fontSize: "11px", padding: "2px 8px", borderRadius: "10px",
+  },
+  select: {
+    width: "100%", padding: "9px 12px",
+    backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
+    borderRadius: "8px", color: "#e0e0e0",
+    fontSize: "13px", fontFamily: "inherit", cursor: "pointer",
+  },
+  filterInput: {
+    width: "100%", padding: "9px 12px",
+    backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
+    borderRadius: "8px", color: "#e0e0e0",
+    fontSize: "13px", fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+  dateRow: { display: "flex", gap: "8px" },
+  dateField: { flex: 1, display: "flex", flexDirection: "column", gap: "4px" },
+  dateLabel: { color: "#444444", fontSize: "10px", fontWeight: "600" },
+  dateInput: {
+    width: "100%", padding: "8px 10px",
+    backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
+    borderRadius: "8px", color: "#e0e0e0",
+    fontSize: "11px", fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+  applyBtn: {
+    width: "100%", padding: "11px",
+    backgroundColor: "rgba(0,255,136,0.12)",
+    border: "1px solid rgba(0,255,136,0.3)",
+    borderRadius: "9px", color: "#00ff88",
+    fontSize: "13px", fontWeight: "700",
+    cursor: "pointer", fontFamily: "inherit",
+    marginTop: "6px",
+  },
+  clearBtn: {
+    width: "100%", padding: "9px",
+    backgroundColor: "transparent",
+    border: "1px solid #2a2a2a",
+    borderRadius: "9px", color: "#555555",
+    fontSize: "12px", cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  filterResultBadge: {
+    textAlign: "center", padding: "10px",
+    backgroundColor: "rgba(0,255,136,0.05)",
+    border: "1px solid rgba(0,255,136,0.1)",
+    borderRadius: "8px", display: "flex",
+    alignItems: "center", justifyContent: "center", gap: "4px",
   },
   middlePanel: { flex: 1, overflowY: "auto", borderRight: "1px solid #1e1e1e" },
   emptyState: {
@@ -718,7 +915,6 @@ const styles = {
     border: "1px solid", fontSize: "11px",
     fontWeight: "600", cursor: "pointer",
     fontFamily: "inherit", textAlign: "center",
-    transition: "all 0.3s ease",
   },
   detailSection: { marginBottom: "16px" },
   detailSectionTitle: {
