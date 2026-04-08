@@ -86,3 +86,29 @@ export const getFilteredReports = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+// Update fund request status (Approve / Reject)
+export const updateFundRequestStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["Pending", "Approved", "Rejected"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const fundRequest = await FundRequest.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    ).populate("userId", "name email contactInfo area");
+
+    if (!fundRequest) {
+      return res.status(404).json({ message: "Fund request not found" });
+    }
+
+    res.status(200).json({ message: "Status updated successfully", fundRequest });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};

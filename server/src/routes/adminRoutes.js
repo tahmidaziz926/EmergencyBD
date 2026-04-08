@@ -4,6 +4,7 @@ import {
   getAllFundRequests,
   updateReportStatus,
   getFilteredReports,
+  updateFundRequestStatus,
 } from "../controllers/adminController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import adminMiddleware from "../middleware/adminMiddleware.js";
@@ -19,6 +20,10 @@ router.get("/reports/filter", authMiddleware, adminMiddleware, getFilteredReport
 
 // Get all fund requests
 router.get("/fund-requests", authMiddleware, adminMiddleware, getAllFundRequests);
+
+// Update fund request status (Approve / Reject)
+router.put("/fund-requests/:id/status", authMiddleware, adminMiddleware, updateFundRequestStatus);
+
 
 // Update report status
 router.put("/reports/:id/status", authMiddleware, adminMiddleware, updateReportStatus);
