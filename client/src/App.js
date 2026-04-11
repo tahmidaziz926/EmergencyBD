@@ -11,6 +11,7 @@ import FundRequestList from "./pages/User/FundRequestList";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import AdminReports from "./pages/Admin/AdminReports";
 import AdminFundRequests from "./pages/Admin/AdminFundRequests";
+import AdminUsers from "./pages/Admin/AdminUsers";
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { token, role, loading } = useAuth();
@@ -46,6 +47,7 @@ const AppRoutes = () => {
       <Route path="/admin/dashboard" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><AdminReports /></ProtectedRoute>} />
       <Route path="/admin/fund-requests" element={<ProtectedRoute allowedRole="admin"><AdminFundRequests /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
     </Routes>
   );
 };

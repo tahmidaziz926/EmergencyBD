@@ -39,6 +39,7 @@ const Navbar = () => {
     { path: "/admin/dashboard", label: "Dashboard", icon: "📊" },
     { path: "/admin/reports", label: "Reports", icon: "🚨" },
     { path: "/admin/fund-requests", label: "Fund Requests", icon: "💰" },
+    { path: "/admin/users", label: "Users", icon: "👥" },
   ];
 
   const links = role === "admin" ? adminLinks : userLinks;
@@ -416,7 +417,7 @@ const Navbar = () => {
             </div>
           )}
 
-          <button 
+          <button
             className="logout-btn"
             onClick={handleLogout}
             onMouseEnter={() => setLogoutHover(true)}

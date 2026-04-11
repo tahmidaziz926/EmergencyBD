@@ -28,7 +28,12 @@ const UserSchema = new mongoose.Schema({
   },
   notifications: {
     type: Boolean,
-    default: false       // widget UI only for now, activated in Phase 3
+    default: false
+  },
+  status: {
+    type: String,
+    enum: ["active", "suspended", "blocked"],
+    default: "active"
   }
 }, { timestamps: true });
 
