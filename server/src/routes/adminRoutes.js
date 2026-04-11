@@ -5,27 +5,25 @@ import {
   updateReportStatus,
   getFilteredReports,
   updateFundRequestStatus,
+  getAllUsers,
+  updateUserStatus,
 } from "../controllers/adminController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import adminMiddleware from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
 
-// Get all reports
+// ── Reports ──────────────────────────────────────────
 router.get("/reports", authMiddleware, adminMiddleware, getAllReports);
-
-// Filter reports by type, location, date
-// ⚠️ MUST be above /reports/:id/status so Express doesn't treat "filter" as an id
 router.get("/reports/filter", authMiddleware, adminMiddleware, getFilteredReports);
+router.put("/reports/:id/status", authMiddleware, adminMiddleware, updateReportStatus);
 
-// Get all fund requests
+// ── Fund Requests ─────────────────────────────────────
 router.get("/fund-requests", authMiddleware, adminMiddleware, getAllFundRequests);
-
-// Update fund request status (Approve / Reject)
 router.put("/fund-requests/:id/status", authMiddleware, adminMiddleware, updateFundRequestStatus);
 
-
-// Update report status
-router.put("/reports/:id/status", authMiddleware, adminMiddleware, updateReportStatus);
+// ── Users ─────────────────────────────────────────────
+router.get("/users", authMiddleware, adminMiddleware, getAllUsers);
+router.put("/users/:id/status", authMiddleware, adminMiddleware, updateUserStatus);
 
 export default router;
