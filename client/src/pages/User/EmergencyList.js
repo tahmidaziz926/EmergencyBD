@@ -20,6 +20,9 @@ const typeConfig = {
 
 const getImageUrl = (imageUrl) => {
   if (!imageUrl) return null;
+  // Cloudinary URLs are already full URLs
+  if (imageUrl.startsWith("http")) return imageUrl;
+  // Fallback for any old local images
   const cleaned = imageUrl.replace(/\\/g, "/");
   return `http://localhost:3001/${cleaned}`;
 };
