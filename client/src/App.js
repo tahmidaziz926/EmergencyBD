@@ -14,6 +14,7 @@ import AdminReports from "./pages/Admin/AdminReports";
 import AdminFundRequests from "./pages/Admin/AdminFundRequests";
 import AdminUsers from "./pages/Admin/AdminUsers";
 import AdminContacts from "./pages/Admin/AdminContacts";
+import EmergencyMap from "./pages/EmergencyMap";
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { token, role, loading } = useAuth();
@@ -52,6 +53,9 @@ const AppRoutes = () => {
       <Route path="/admin/fund-requests" element={<ProtectedRoute allowedRole="admin"><AdminFundRequests /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
       <Route path="/admin/contacts" element={<ProtectedRoute allowedRole="admin"><AdminContacts /></ProtectedRoute>} />
+
+      {/* Shared Route — both admin and user */}
+      <Route path="/emergency-map" element={<ProtectedRoute><EmergencyMap /></ProtectedRoute>} />
     </Routes>
   );
 };

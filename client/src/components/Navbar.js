@@ -34,6 +34,7 @@ const Navbar = () => {
     { path: "/user/fund", label: "Fund Request", icon: "💰" },
     { path: "/user/fund/list", label: "My Funds", icon: "📂" },
     { path: "/user/contacts", label: "Contacts", icon: "📞" },
+    { path: "/emergency-map", label: "Map", icon: "🗺️" },
   ];
 
   const adminLinks = [
@@ -42,6 +43,7 @@ const Navbar = () => {
     { path: "/admin/fund-requests", label: "Fund Requests", icon: "💰" },
     { path: "/admin/users", label: "Users", icon: "👥" },
     { path: "/admin/contacts", label: "Contacts", icon: "📞" },
+    { path: "/emergency-map", label: "Map", icon: "🗺️" },
   ];
 
   const links = role === "admin" ? adminLinks : userLinks;
