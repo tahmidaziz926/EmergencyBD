@@ -8,10 +8,12 @@ import EmergencyForm from "./pages/User/EmergencyForm";
 import EmergencyList from "./pages/User/EmergencyList";
 import FundRequestForm from "./pages/User/FundRequestForm";
 import FundRequestList from "./pages/User/FundRequestList";
+import EmergencyContacts from "./pages/User/EmergencyContacts";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import AdminReports from "./pages/Admin/AdminReports";
 import AdminFundRequests from "./pages/Admin/AdminFundRequests";
 import AdminUsers from "./pages/Admin/AdminUsers";
+import AdminContacts from "./pages/Admin/AdminContacts";
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { token, role, loading } = useAuth();
@@ -42,12 +44,14 @@ const AppRoutes = () => {
       <Route path="/user/emergency/list" element={<ProtectedRoute allowedRole="user"><EmergencyList /></ProtectedRoute>} />
       <Route path="/user/fund" element={<ProtectedRoute allowedRole="user"><FundRequestForm /></ProtectedRoute>} />
       <Route path="/user/fund/list" element={<ProtectedRoute allowedRole="user"><FundRequestList /></ProtectedRoute>} />
+      <Route path="/user/contacts" element={<ProtectedRoute allowedRole="user"><EmergencyContacts /></ProtectedRoute>} />
 
       {/* Admin Routes */}
       <Route path="/admin/dashboard" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><AdminReports /></ProtectedRoute>} />
       <Route path="/admin/fund-requests" element={<ProtectedRoute allowedRole="admin"><AdminFundRequests /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsers /></ProtectedRoute>} />
+      <Route path="/admin/contacts" element={<ProtectedRoute allowedRole="admin"><AdminContacts /></ProtectedRoute>} />
     </Routes>
   );
 };
