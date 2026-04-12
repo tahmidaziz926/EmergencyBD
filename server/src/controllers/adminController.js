@@ -1,6 +1,7 @@
 import EmergencyReport from "../models/EmergencyReport.js";
 import FundRequest from "../models/FundRequest.js";
 import User from "../models/User.js";
+import EmergencyContact from "../models/EmergencyContact.js";
 
 // Get all emergency reports
 export const getAllReports = async (req, res) => {
@@ -147,6 +148,72 @@ export const updateUserStatus = async (req, res) => {
     }
 
     res.status(200).json({ message: `User status updated to ${status}`, user });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+// Get all emergency contacts
+export const getAllContacts = async (req, res) => {
+  try {
+    const contacts = await EmergencyContact.find().sort({ createdAt: -1 });
+    res.status(200).json(contacts);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Add a new emergency contact
+export const addContact = async (req, res) => {
+  try {
+    const { name, number, type, area, notes } = req.body;
+
+    if (!name || !number || !type || !area) {
+      return res.status(400).json({ message: "Name, number, type and area are required" });
+    }
+
+    const contact = new EmergencyContact({ name, number, type, area, notes });
+    await contact.save();
+
+    res.status(201).json({ message: "Contact added successfully", contact });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Update an emergency contact
+export const updateContact = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, number, type, area, notes } = req.body;
+
+    const contact = await EmergencyContact.findByIdAndUpdate(
+      id,
+      { name, number, type, area, notes },
+      { new: true, runValidators: true }
+    );
+
+    if (!contact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+
+    res.status(200).json({ message: "Contact updated successfully", contact });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Delete an emergency contact
+export const deleteContact = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const contact = await EmergencyContact.findByIdAndDelete(id);
+
+    if (!contact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+
+    res.status(200).json({ message: "Contact deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
