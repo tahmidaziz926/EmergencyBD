@@ -4,6 +4,8 @@ import EmergencyReport from "../models/EmergencyReport.js";
 export const submitReport = async (req, res) => {
   try {
     const { emergencyType, description, lat, lng, area } = req.body;
+
+    // Cloudinary gives the full URL in req.file.path
     const imageUrl = req.file ? req.file.path : null;
 
     const newReport = new EmergencyReport({
