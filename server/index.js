@@ -7,6 +7,7 @@ import emergencyRoutes from "./src/routes/emergencyRoutes.js";
 import fundRoutes from "./src/routes/fundRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
+import sosRoutes from "./src/routes/sosRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -24,6 +25,7 @@ app.use("/api/emergency", emergencyRoutes);
 app.use("/api/fund", fundRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/sos", sosRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`SERVER STARTED on port ${PORT} 🚀`));

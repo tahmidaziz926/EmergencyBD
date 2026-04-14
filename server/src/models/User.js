@@ -34,7 +34,22 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ["active", "suspended", "blocked"],
     default: "active"
+  },
+  // F11: geospatial location for radius-based SOS targeting
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point"
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [90.4125, 23.8103] // default: Dhaka center
+    }
   }
 }, { timestamps: true });
+
+// F11: 2dsphere index required for $nearSphere geospatial queries
+UserSchema.index({ location: "2dsphere" });
 
 export default mongoose.model("User", UserSchema);
