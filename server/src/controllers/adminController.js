@@ -2,6 +2,7 @@ import EmergencyReport from "../models/EmergencyReport.js";
 import FundRequest from "../models/FundRequest.js";
 import User from "../models/User.js";
 import EmergencyContact from "../models/EmergencyContact.js";
+import Notification from "../models/Notification.js";
 
 // Get all emergency reports
 export const getAllReports = async (req, res) => {
@@ -48,11 +49,74 @@ export const updateReportStatus = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
+    const statusMessages = {
+      Verified: "Your emergency report has been verified by our team and is being acted upon.",
+      Resolved: "Your emergency report has been marked as resolved. Thank you for reporting.",
+      Pending: "Your emergency report status has been updated to Pending.",
+    };
+    const statusEmojis = { Verified: "✅", Resolved: "🎯", Pending: "⏳" };
+    const priorities = { Verified: "high", Resolved: "medium", Pending: "low" };
+
+    await Notification.create({
+      userId: report.userId._id,
+      title: `${statusEmojis[status]} Report ${status}`,
+      message: statusMessages[status],
+      type: "status_change",
+      reportId: report._id,
+      priority: priorities[status],
+    });
+
     res.status(200).json({ message: "Status updated successfully", report });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+// Update fund request status (Approve / Reject)
+export const updateFundRequestStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["Pending", "Approved", "Rejected"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const fundRequest = await FundRequest.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    ).populate("userId", "name email contactInfo area");
+
+    if (!fundRequest) {
+      return res.status(404).json({ message: "Fund request not found" });
+    }
+
+    const fundMessages = {
+      Approved: `Your fund request "${fundRequest.title}" for BDT ${fundRequest.amountNeeded.toLocaleString()} has been approved!`,
+      Rejected: `Your fund request "${fundRequest.title}" has been reviewed and was not approved at this time.`,
+      Pending: `Your fund request "${fundRequest.title}" status has been updated to Pending.`,
+    };
+    const fundEmojis = { Approved: "✅", Rejected: "❌", Pending: "⏳" };
+    const priorities = { Approved: "high", Rejected: "medium", Pending: "low" };
+
+    await Notification.create({
+      userId: fundRequest.userId._id,
+      title: `${fundEmojis[status]} Fund Request ${status}`,
+      message: fundMessages[status],
+      type: "fund_update",
+      fundId: fundRequest._id,
+      priority: priorities[status],
+    });
+
+    res.status(200).json({ message: "Status updated successfully", fundRequest });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+
 // Filter reports by type, location (area), or date
 export const getFilteredReports = async (req, res) => {
   try {
@@ -83,32 +147,6 @@ export const getFilteredReports = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.status(200).json(reports);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-};
-// Update fund request status (Approve / Reject)
-export const updateFundRequestStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const validStatuses = ["Pending", "Approved", "Rejected"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid status value" });
-    }
-
-    const fundRequest = await FundRequest.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    ).populate("userId", "name email contactInfo area");
-
-    if (!fundRequest) {
-      return res.status(404).json({ message: "Fund request not found" });
-    }
-
-    res.status(200).json({ message: "Status updated successfully", fundRequest });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
