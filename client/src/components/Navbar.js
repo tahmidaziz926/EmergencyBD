@@ -35,6 +35,8 @@ const Navbar = () => {
     { path: "/user/fund/list", label: "My Funds", icon: "📂" },
     { path: "/user/contacts", label: "Contacts", icon: "📞" },
     { path: "/emergency-map", label: "Map", icon: "🗺️" },
+    { path: "/user/sos", label: "SOS", icon: "🆘", isSOS: true },
+    { path: "/sos-map", label: "Live SOS", icon: "📡", isLive: true },
   ];
 
   const adminLinks = [
@@ -44,6 +46,7 @@ const Navbar = () => {
     { path: "/admin/users", label: "Users", icon: "👥" },
     { path: "/admin/contacts", label: "Contacts", icon: "📞" },
     { path: "/emergency-map", label: "Map", icon: "🗺️" },
+    { path: "/sos-map", label: "Live SOS", icon: "📡", isLive: true },
   ];
 
   const links = role === "admin" ? adminLinks : userLinks;
@@ -104,6 +107,16 @@ const Navbar = () => {
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(-10px); }
           to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes sosPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
+          50% { box-shadow: 0 0 0 6px rgba(255, 0, 0, 0); }
+        }
+
+        @keyframes liveDot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.8); }
         }
         
         .nav-link {
@@ -170,6 +183,92 @@ const Navbar = () => {
         .nav-link.active .link-icon {
           animation: glowPulse 2s infinite;
           opacity: 1;
+        }
+
+        /* SOS button — stands out from all other links */
+        .nav-link-sos {
+          color: #fff;
+          font-size: 14px;
+          font-weight: 700;
+          text-decoration: none;
+          padding: 9px 18px;
+          border-radius: 30px;
+          background: linear-gradient(135deg, #cc0000, #ff0000);
+          border: 1.5px solid #ff000066;
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          margin: 0 4px;
+          letter-spacing: 1px;
+          transition: all 0.3s ease;
+          animation: sosPulse 2s ease-in-out infinite;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .nav-link-sos::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+          transform: translateX(-100%);
+          transition: transform 0.5s ease;
+        }
+
+        .nav-link-sos:hover::before {
+          transform: translateX(100%);
+        }
+
+        .nav-link-sos:hover {
+          transform: translateY(-2px) scale(1.04);
+          box-shadow: 0 6px 20px rgba(255, 0, 0, 0.45);
+          background: linear-gradient(135deg, #ff0000, #ff3333);
+        }
+
+        .nav-link-sos.active {
+          box-shadow: 0 0 16px rgba(255, 0, 0, 0.6);
+          border-color: #ff0000;
+        }
+
+        /* Live SOS map link */
+        .nav-link-live {
+          color: #00ff88;
+          font-size: 14px;
+          font-weight: 600;
+          text-decoration: none;
+          padding: 9px 16px;
+          border-radius: 30px;
+          background: rgba(0, 255, 136, 0.08);
+          border: 1.5px solid rgba(0, 255, 136, 0.3);
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          margin: 0 4px;
+          letter-spacing: 0.5px;
+          transition: all 0.3s ease;
+        }
+
+        .nav-link-live:hover {
+          background: rgba(0, 255, 136, 0.15);
+          border-color: rgba(0, 255, 136, 0.6);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
+          color: #00ff88;
+        }
+
+        .nav-link-live.active {
+          background: rgba(0, 255, 136, 0.15);
+          border-color: #00ff88;
+          box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+        }
+
+        .live-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #00ff88;
+          animation: liveDot 1.2s ease-in-out infinite;
+          flex-shrink: 0;
         }
         
         .logout-btn {
@@ -374,31 +473,65 @@ const Navbar = () => {
         ...styles.nav,
         ...(isScrolled ? styles.navScrolled : {})
       }}>
-        {/* Logo with modern design */}
+        {/* Logo */}
         <div style={styles.logo} className="logo-container">
           <span className="logo-icon" style={styles.logoIcon}>🚨</span>
           <span className="logo-text">EmergencyBD</span>
         </div>
 
-        {/* Links with modern styling */}
+        {/* Links */}
         <div style={styles.linksContainer}>
-          {links.map((link, index) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`nav-link ${isActive(link.path) ? "active" : ""}`}
-              style={{ animation: `slideIn 0.3s ease ${index * 0.05}s both` }}
-              onMouseEnter={() => setHoveredLink(link.path)}
-              onMouseLeave={() => setHoveredLink(null)}
-            >
-              <span className="link-icon">{link.icon}</span>
-              <span>{link.label}</span>
-              {link.label === "Report" && <span className="badge">URGENT</span>}
-            </Link>
-          ))}
+          {links.map((link, index) => {
+            // SOS trigger button — special pill style
+            if (link.isSOS) {
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`nav-link-sos ${isActive(link.path) ? "active" : ""}`}
+                  style={{ animation: `slideIn 0.3s ease ${index * 0.05}s both` }}
+                >
+                  <span style={{ fontSize: 16 }}>{link.icon}</span>
+                  <span>{link.label}</span>
+                </Link>
+              );
+            }
+
+            // Live SOS map link — green pill style
+            if (link.isLive) {
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`nav-link-live ${isActive(link.path) ? "active" : ""}`}
+                  style={{ animation: `slideIn 0.3s ease ${index * 0.05}s both` }}
+                >
+                  <span className="live-dot"></span>
+                  <span style={{ fontSize: 15 }}>{link.icon}</span>
+                  <span>{link.label}</span>
+                </Link>
+              );
+            }
+
+            // Normal nav link
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`nav-link ${isActive(link.path) ? "active" : ""}`}
+                style={{ animation: `slideIn 0.3s ease ${index * 0.05}s both` }}
+                onMouseEnter={() => setHoveredLink(link.path)}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
+                <span className="link-icon">{link.icon}</span>
+                <span>{link.label}</span>
+                {link.label === "Report" && <span className="badge">URGENT</span>}
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Right Section with modern design */}
+        {/* Right Section */}
         <div style={styles.rightSection}>
           <div className="notification-widget">
             <NotificationWidget />
@@ -441,7 +574,7 @@ const Navbar = () => {
 
 const styles = {
   nav: {
-    background: "#262626", // Lightened black (charcoal)
+    background: "#262626",
     borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
     padding: "0 48px",
     height: "80px",
@@ -455,7 +588,7 @@ const styles = {
     animation: "slideDown 0.5s ease",
   },
   navScrolled: {
-    background: "#1f1f1f", // Slightly darker when scrolled
+    background: "#1f1f1f",
     backdropFilter: "blur(10px)",
     height: "70px",
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
