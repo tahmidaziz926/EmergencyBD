@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Circle, Popup, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { triggerSOS } from "../../services/sosService";
@@ -286,7 +286,13 @@ const SOSPage = () => {
         setGpsLoading(false);
       },
       () => {
-        setAlert({ type: "error", message: "GPS unavailable. Please select location manually on the map." });
+        // Only show error if we have no location at all yet
+        setForm((f) => {
+          if (!f.latitude && !f.longitude) {
+            setAlert({ type: "error", message: "GPS unavailable. Please click on the map to set your location manually." });
+          }
+          return f;
+        });
         setGpsLoading(false);
       },
       { timeout: 8000, enableHighAccuracy: true }
@@ -359,7 +365,7 @@ const SOSPage = () => {
     return (
       <div className="sos-page" style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e0e0e0", padding: "24px" }}>
         {/* Header */}
-        <div style={{ maxWidth: 760, margin: "0 auto 32px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto 32px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
             <div style={{
               width: 48, height: 48, borderRadius: "50%",
@@ -379,7 +385,7 @@ const SOSPage = () => {
           <div style={{ height: 1, background: "linear-gradient(to right, #ff0000, #ff000000)" }} />
         </div>
 
-        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
           {/* Alert */}
           {alert && (
             <div className={alert.type === "error" ? "alert-error" : "alert-success"}
@@ -481,11 +487,11 @@ const SOSPage = () => {
             </div>
 
             {/* Map for picking location */}
-            <div style={{ height: 280, borderRadius: 10, overflow: "hidden", border: "1px solid #222", position: "relative" }}>
+            <div style={{ height: 520, borderRadius: 12, overflow: "hidden", border: "1px solid #2a2a2a", boxShadow: "0 0 32px #00000088, 0 0 0 1px #ffffff08", position: "relative" }}>
               <div className="scan-overlay" />
               <MapContainer
                 center={[form.latitude || 23.8103, form.longitude || 90.4125]}
-                zoom={13}
+                zoom={14}
                 style={{ height: "100%", width: "100%" }}
               >
                 <TileLayer
@@ -500,16 +506,79 @@ const SOSPage = () => {
                     <MapPanner lat={form.latitude} lng={form.longitude} />
                     <Marker
                       position={[form.latitude, form.longitude]}
-                      icon={selectedType ? createSOSIcon(form.emergencyType) : L.Icon.Default}
-                    />
+                      icon={createSOSIcon(form.emergencyType || "other")}
+                    >
+                      <Popup closeButton={false} maxWidth={280}>
+                        <div style={{
+                          background: "#141414",
+                          border: `1px solid ${selectedType?.color || "#00ff88"}44`,
+                          borderRadius: 10,
+                          padding: "14px 16px",
+                          fontFamily: "Rajdhani, sans-serif",
+                          color: "#e0e0e0",
+                          minWidth: 220,
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                            <span style={{ fontSize: 24 }}>{selectedType?.icon || "🚨"}</span>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: selectedType?.color || "#00ff88", letterSpacing: 0.5 }}>
+                                {form.emergencyType ? form.emergencyType.toUpperCase() : "EMERGENCY TYPE"}
+                              </div>
+                              <div style={{ fontSize: 13, color: "#e0e0e0" }}>
+                                {form.title || "Untitled incident"}
+                              </div>
+                            </div>
+                          </div>
+                          {form.description && (
+                            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#aaa", lineHeight: 1.5 }}>
+                              {form.description.length > 100 ? form.description.slice(0, 100) + "..." : form.description}
+                            </p>
+                          )}
+                          <div style={{ fontSize: 11, color: "#555", fontFamily: "monospace", marginBottom: 6 }}>
+                            📍 {form.address ? (form.address.length > 70 ? form.address.slice(0, 70) + "..." : form.address) : `${form.latitude?.toFixed(5)}, ${form.longitude?.toFixed(5)}`}
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#444", fontFamily: "monospace" }}>
+                            <span>RADIUS: {form.radius} km</span>
+                            <span>{form.latitude?.toFixed(4)}, {form.longitude?.toFixed(4)}</span>
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
                     <Circle
                       center={[form.latitude, form.longitude]}
                       radius={form.radius * 1000}
-                      pathOptions={{ color: selectedType?.color || "#00ff88", fillOpacity: 0.08, weight: 1.5 }}
+                      pathOptions={{ color: selectedType?.color || "#00ff88", fillOpacity: 0.08, weight: 1.5, dashArray: "6 4" }}
                     />
                   </>
                 )}
               </MapContainer>
+
+              {/* Manual mode instruction */}
+              {form.locationMode === "manual" && (
+                <div style={{
+                  position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)",
+                  background: "#111111cc", backdropFilter: "blur(8px)",
+                  border: "1px solid #333", borderRadius: 20,
+                  padding: "6px 16px", fontSize: 12, color: "#888",
+                  fontFamily: "Rajdhani, sans-serif", letterSpacing: 0.5,
+                  zIndex: 1000, pointerEvents: "none", whiteSpace: "nowrap",
+                }}>
+                  🖱️ Click anywhere on the map to place the emergency marker
+                </div>
+              )}
+
+              {/* Click hint */}
+              {form.latitude && form.longitude && (
+                <div style={{
+                  position: "absolute", top: 12, right: 12,
+                  background: "#111111cc", backdropFilter: "blur(8px)",
+                  border: "1px solid #00ff8833", borderRadius: 20,
+                  padding: "5px 12px", fontSize: 11, color: "#00ff8899",
+                  fontFamily: "monospace", zIndex: 1000, pointerEvents: "none",
+                }}>
+                  📍 Click marker for details
+                </div>
+              )}
             </div>
 
             {form.address && (
@@ -554,7 +623,7 @@ const SOSPage = () => {
               boxShadow: "0 4px 20px #ff000044",
             }}
           >
-            🗺️ PREVIEW ON MAP
+          🗺️ PROCEED TO SOS MAP →
           </button>
         </div>
       </div>
@@ -682,7 +751,7 @@ const SOSPage = () => {
           {/* SOS Marker */}
           <Marker
             position={[form.latitude, form.longitude]}
-            icon={selectedType ? createSOSIcon(form.emergencyType) : undefined}
+            icon={createSOSIcon(form.emergencyType || "other")}
           />
         </MapContainer>
 
