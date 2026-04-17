@@ -346,7 +346,7 @@ const SOSPage = () => {
       setTriggered(true);
       setAlert({
         type: "success",
-        message: `SOS triggered! ${res.data.notifiedCount} user(s) in your area have been notified.`,
+        message: `✅ SOS submitted successfully! ${res.data.notifiedCount > 0 ? `${res.data.notifiedCount} user(s) in your area have been notified.` : "Alert is now live on the map."}`,
       });
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.message || "Failed to trigger SOS." });
