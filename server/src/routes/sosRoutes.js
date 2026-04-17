@@ -41,25 +41,28 @@ router.post("/trigger", authMiddleware, async (req, res) => {
 
     await sosEvent.save();
 
-    // Find users within radius (excluding sender and admins)
-    const radiusInMeters = sosEvent.radius * 1000;
-
-    const usersInRadius = await User.find({
-      _id: { $ne: req.user.id },
-      role: { $ne: "admin" },
-      status: "active",
-      location: {
-        $nearSphere: {
-          $geometry: {
-            type: "Point",
-            coordinates: [parseFloat(longitude), parseFloat(latitude)],
+    // Find users within radius — wrapped separately so geo errors never kill the response
+    let notifiedUserIds = [];
+    try {
+      const radiusInMeters = sosEvent.radius * 1000;
+      const usersInRadius = await User.find({
+        _id: { $ne: req.user.id },
+        role: { $ne: "admin" },
+        location: {
+          $nearSphere: {
+            $geometry: {
+              type: "Point",
+              coordinates: [parseFloat(longitude), parseFloat(latitude)],
+            },
+            $maxDistance: radiusInMeters,
           },
-          $maxDistance: radiusInMeters,
         },
-      },
-    }).select("_id");
-
-    const notifiedUserIds = usersInRadius.map((u) => u._id);
+      }).select("_id");
+      notifiedUserIds = usersInRadius.map((u) => u._id);
+    } catch (geoErr) {
+      // Geo query may fail if users don't have location indexed yet — SOS still succeeds
+      console.warn("Geo radius query skipped:", geoErr.message);
+    }
 
     // Send in-app notifications to users in radius
     if (notifiedUserIds.length > 0) {
@@ -80,33 +83,36 @@ router.post("/trigger", authMiddleware, async (req, res) => {
         priority: "high",
         isRead: false,
       }));
-
       await Notification.insertMany(notifications);
       sosEvent.notifiedUsers = notifiedUserIds;
       await sosEvent.save();
     }
 
     // Notify admins too
-    const admins = await User.find({ role: "admin" }).select("_id");
-    if (admins.length > 0) {
-      const adminNotifs = admins.map((admin) => ({
-        recipient: admin._id,
-        type: "sos_alert",
-        category: "Emergency Alert",
-        title: `${typeIcon[emergencyType] || "🚨"} New SOS: ${title}`,
-        message: `${description} — ${address || `${latitude}, ${longitude}`}`,
-        data: {
-          sosEventId: sosEvent._id,
-          emergencyType,
-          latitude,
-          longitude,
-          address: address || "",
-          radius: sosEvent.radius,
-        },
-        priority: "high",
-        isRead: false,
-      }));
-      await Notification.insertMany(adminNotifs);
+    try {
+      const admins = await User.find({ role: "admin" }).select("_id");
+      if (admins.length > 0) {
+        const adminNotifs = admins.map((admin) => ({
+          recipient: admin._id,
+          type: "sos_alert",
+          category: "Emergency Alert",
+          title: `${typeIcon[emergencyType] || "🚨"} New SOS: ${title}`,
+          message: `${description} — ${address || `${latitude}, ${longitude}`}`,
+          data: {
+            sosEventId: sosEvent._id,
+            emergencyType,
+            latitude,
+            longitude,
+            address: address || "",
+            radius: sosEvent.radius,
+          },
+          priority: "high",
+          isRead: false,
+        }));
+        await Notification.insertMany(adminNotifs);
+      }
+    } catch (notifErr) {
+      console.warn("Admin notification skipped:", notifErr.message);
     }
 
     res.status(201).json({
