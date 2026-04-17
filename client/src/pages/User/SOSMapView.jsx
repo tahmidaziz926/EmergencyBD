@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Circle, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -211,6 +211,7 @@ const timeAgo = (date) => {
 // Main Component
 // ════════════════════════════════════════════════════════════════════════════
 const SOSMapView = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get("id"); // from notification link
 
@@ -284,6 +285,20 @@ const SOSMapView = () => {
           style={{ background: "none", border: "1px solid #333", color: "#888", padding: "6px 12px", borderRadius: 6, cursor: "pointer" }}
         >
           ☰
+        </button>
+        <button
+          onClick={() => navigate("/user/profile")}
+          style={{
+            background: "none", border: "1px solid #2a2a2a", color: "#666",
+            padding: "6px 16px", borderRadius: 6, cursor: "pointer",
+            fontSize: 13, fontFamily: "Rajdhani,sans-serif",
+            display: "flex", alignItems: "center", gap: 6,
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#00ff88"; e.currentTarget.style.color = "#00ff88"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#666"; }}
+        >
+          ← Dashboard
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff3333", animation: "liveBlink 1s ease-in-out infinite" }} />

@@ -366,6 +366,21 @@ const SOSPage = () => {
       <div className="sos-page" style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e0e0e0", padding: "24px" }}>
         {/* Header */}
         <div style={{ maxWidth: 900, margin: "0 auto 32px" }}>
+          {/* Back to dashboard */}
+          <button
+            onClick={() => navigate("/user/profile")}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: "none", border: "1px solid #2a2a2a",
+              color: "#666", padding: "8px 16px", borderRadius: 8,
+              cursor: "pointer", fontSize: 13, fontFamily: "Rajdhani,sans-serif",
+              marginBottom: 20, transition: "all 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#00ff88"; e.currentTarget.style.color = "#00ff88"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#666"; }}
+          >
+            ← Back to Dashboard
+          </button>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
             <div style={{
               width: 48, height: 48, borderRadius: "50%",
@@ -686,7 +701,7 @@ const SOSPage = () => {
               ✓ SOS ACTIVE
             </div>
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/user/profile")}
               style={{
                 padding: "10px 20px", background: "#1a1a1a",
                 border: "1px solid #333", borderRadius: 8,
