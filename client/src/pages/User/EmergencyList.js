@@ -155,7 +155,7 @@ const LocationDetail = ({ location }) => {
             style={locStyles.copyBtn}
             onClick={handleCopy}
           >
-            {copied ? "✅ Copied!" : "📋 Copy Coordinates"}
+            {copied ? "✅ Copied!" : "📋 Copy Location Coordinates"}
           </button>
           <a
             href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
