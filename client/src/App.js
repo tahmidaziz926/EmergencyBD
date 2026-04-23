@@ -24,6 +24,9 @@ import SOSPage from "./pages/User/SOSPage";
 import SOSMapView from "./pages/User/SOSMapView";
 import SOSAlertContainer from "./components/SOSAlert";
 import { getActiveSOSEvents } from "./services/sosService";
+import BloodRequests from "./pages/User/BloodRequests";
+import BloodDonors from "./pages/User/BloodDonors";
+import BloodCampaigns from "./pages/User/BloodCampaigns";
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { token, role, loading } = useAuth();
@@ -73,7 +76,7 @@ const AppRoutes = () => {
     <>
       <SOSAlertPoller />
       <Routes>
-        <Route path="/" element={token ? (role==="admin" ? <Navigate to="/admin/dashboard"/> : <Navigate to="/user/profile"/>) : <Navigate to="/login"/>} />
+        <Route path="/" element={token ? (role === "admin" ? <Navigate to="/admin/dashboard" /> : <Navigate to="/user/profile" />) : <Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -99,6 +102,10 @@ const AppRoutes = () => {
         {/* Shared */}
         <Route path="/emergency-map" element={<ProtectedRoute><EmergencyMap /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        {/* Blood Routes — shared for both roles */}
+        <Route path="/blood/requests" element={<ProtectedRoute><BloodRequests /></ProtectedRoute>} />
+        <Route path="/blood/donors" element={<ProtectedRoute><BloodDonors /></ProtectedRoute>} />
+        <Route path="/blood/campaigns" element={<ProtectedRoute><BloodCampaigns /></ProtectedRoute>} />
       </Routes>
     </>
   );
