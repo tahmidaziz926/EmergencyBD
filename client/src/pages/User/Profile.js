@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getProfile, updateProfile } from "../../services/authService";
 import useAuth from "../../hooks/useAuth";
 import Navbar from "../../components/Navbar";
@@ -11,6 +11,9 @@ const Profile = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("info");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -40,6 +43,64 @@ const Profile = () => {
     }
   };
 
+  const handlePhotoClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setPhotoError("Only JPG, PNG, or WEBP images are allowed.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError("Image must be under 5MB.");
+      return;
+    }
+
+    setPhotoError("");
+    setUploadingPhoto(true);
+
+    try {
+      const base64 = await toBase64(file);
+
+      const res = await fetch("http://localhost:3001/api/auth/upload-profile-picture", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      // Save the returned URL to the profile via updateProfile
+      const updated = await updateProfile({ ...form, profilePicture: data.url }, token);
+      setProfile(updated.data);
+      login(token, role, { name: updated.data.name });
+      setMessage("Profile picture updated!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setPhotoError("Photo upload failed. Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
+    }
+  };
+
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   if (loading) return (
     <div style={styles.loadingScreen}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -57,6 +118,9 @@ const Profile = () => {
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+        .avatar-wrapper:hover .avatar-overlay { opacity: 1 !important; }
+        .avatar-wrapper { cursor: pointer; }
 
         .info-row { transition: all 0.3s ease !important; }
         .info-row:hover { background: rgba(0,255,136,0.06) !important; transform: translateX(6px) !important; border-radius: 12px !important; }
@@ -82,6 +146,15 @@ const Profile = () => {
 
       <Navbar />
 
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handlePhotoChange}
+      />
+
       <div style={styles.layout}>
 
         {/* LEFT SIDEBAR */}
@@ -89,17 +162,54 @@ const Profile = () => {
 
           {/* Avatar Section */}
           <div style={styles.sidebarTop}>
+
+            {/* Clickable Avatar */}
             <div style={styles.avatarRing}>
-              <div style={styles.avatar}>
-                {profile?.name?.charAt(0).toUpperCase()}
+              <div
+                className="avatar-wrapper"
+                style={styles.avatarWrapper}
+                onClick={handlePhotoClick}
+                title="Click to change photo"
+              >
+                {uploadingPhoto ? (
+                  <div style={styles.avatarSpinnerWrap}>
+                    <div style={styles.avatarSpinner}></div>
+                  </div>
+                ) : profile?.profilePicture ? (
+                  <img
+                    src={profile.profilePicture}
+                    alt="Profile"
+                    style={styles.avatarImg}
+                  />
+                ) : (
+                  <div style={styles.avatarInitial}>
+                    {profile?.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+
+                {/* Hover overlay */}
+                <div className="avatar-overlay" style={styles.avatarOverlay}>
+                  <span style={styles.cameraIcon}>📷</span>
+                  <span style={styles.overlayText}>Change</span>
+                </div>
               </div>
             </div>
+
             <div style={styles.onlineDot}></div>
+
+            {/* Photo error */}
+            {photoError && (
+              <p style={styles.photoError}>{photoError}</p>
+            )}
+
             <h2 style={styles.sidebarName}>{profile?.name}</h2>
             <div style={styles.roleBadge}>
               {role === "admin" ? "⚡" : "👤"} {role?.toUpperCase()}
             </div>
             <p style={styles.sidebarEmail}>{profile?.email}</p>
+
+            {/* Upload hint */}
+            <p style={styles.uploadHint}>Click avatar to update photo</p>
           </div>
 
           {/* Sidebar Nav */}
@@ -375,17 +485,73 @@ const styles = {
     padding: "3px",
     animation: "glow 3s ease-in-out infinite",
   },
-  avatar: {
+  avatarWrapper: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#111111",
     borderRadius: "50%",
+    overflow: "hidden",
+    position: "relative",
+    backgroundColor: "#111111",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    borderRadius: "50%",
+  },
+  avatarInitial: {
+    width: "100%",
+    height: "100%",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "30px",
     fontWeight: "700",
     color: "#00ff88",
+    backgroundColor: "#111111",
+    borderRadius: "50%",
+  },
+  avatarSpinnerWrap: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#111111",
+    borderRadius: "50%",
+  },
+  avatarSpinner: {
+    width: "28px",
+    height: "28px",
+    border: "3px solid rgba(0,255,136,0.1)",
+    borderTop: "3px solid #00ff88",
+    borderRadius: "50%",
+    animation: "spin 0.8s linear infinite",
+  },
+  avatarOverlay: {
+    position: "absolute",
+    inset: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: "50%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: 0,
+    transition: "opacity 0.3s ease",
+    gap: "2px",
+  },
+  cameraIcon: {
+    fontSize: "18px",
+  },
+  overlayText: {
+    color: "#fff",
+    fontSize: "10px",
+    fontWeight: "600",
+    letterSpacing: "0.5px",
   },
   onlineDot: {
     position: "absolute",
@@ -397,6 +563,19 @@ const styles = {
     borderRadius: "50%",
     border: "2px solid #0f0f0f",
     animation: "pulse 2s ease-in-out infinite",
+  },
+  photoError: {
+    color: "#ff6b6b",
+    fontSize: "11px",
+    textAlign: "center",
+    margin: "0",
+    maxWidth: "200px",
+  },
+  uploadHint: {
+    color: "#444444",
+    fontSize: "10px",
+    marginTop: "-4px",
+    letterSpacing: "0.3px",
   },
   sidebarName: {
     color: "#ffffff",

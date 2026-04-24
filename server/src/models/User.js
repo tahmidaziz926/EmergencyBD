@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
   contactInfo: { type: String, required: true },
   area: { type: String, required: true },
   role: { type: String, default: "user" },
+  profilePicture: { type: String, default: "" },
   notifications: { type: Boolean, default: false },
   status: {
     type: String,

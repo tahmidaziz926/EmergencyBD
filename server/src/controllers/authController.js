@@ -86,14 +86,32 @@ export const getUserProfile = async (req, res) => {
 // Update User Profile
 export const updateUserProfile = async (req, res) => {
   try {
-    const { name, contactInfo, area } = req.body;
+    const { name, contactInfo, area, profilePicture } = req.body;
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { name, contactInfo, area },
+      { name, contactInfo, area, ...(profilePicture && { profilePicture }) },
       { new: true }
     ).select("-password");
     res.status(200).json(updatedUser);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
+  }
+};
+
+import cloudinary from "../config/cloudinary.js";
+
+export const uploadProfilePicture = async (req, res) => {
+  try {
+    const { imageBase64 } = req.body;
+    if (!imageBase64) return res.status(400).json({ message: "No image provided" });
+
+    const result = await cloudinary.uploader.upload(imageBase64, {
+      folder: "profile_pictures",
+      transformation: [{ width: 300, height: 300, crop: "fill", gravity: "face" }],
+    });
+
+    res.status(200).json({ url: result.secure_url });
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed", error });
   }
 };

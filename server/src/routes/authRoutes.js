@@ -3,7 +3,8 @@ import {
   registerUser,
   loginUser,
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
+  uploadProfilePicture
 } from "../controllers/authController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -16,5 +17,6 @@ router.post("/login", loginUser);
 // Protected routes
 router.get("/profile", authMiddleware, getUserProfile);
 router.put("/profile", authMiddleware, updateUserProfile);
+router.post("/upload-profile-picture", authMiddleware, uploadProfilePicture);
 
 export default router;
