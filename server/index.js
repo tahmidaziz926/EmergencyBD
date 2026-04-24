@@ -8,6 +8,7 @@ import fundRoutes from "./src/routes/fundRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import bloodRoutes from "./src/routes/bloodRoutes.js";
+import volunteerRoutes from "./src/routes/volunteerRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -15,7 +16,6 @@ connectDB();
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", authRoutes);
@@ -24,6 +24,7 @@ app.use("/api/fund", fundRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/blood", bloodRoutes);
+app.use("/api/volunteer", volunteerRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`SERVER STARTED on port ${PORT} 🚀`));

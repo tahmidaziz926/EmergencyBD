@@ -12,11 +12,13 @@ const Navbar = () => {
   const [bloodDropdownOpen, setBloodDropdownOpen] = useState(false);
   const [sosDropdownOpen, setSosDropdownOpen] = useState(false);
   const [reportDropdownOpen, setReportDropdownOpen] = useState(false);
+  const [volunteerDropdownOpen, setVolunteerDropdownOpen] = useState(false);
 
   const dropdownRef = useRef(null);
   const bloodDropdownRef = useRef(null);
   const sosDropdownRef = useRef(null);
   const reportDropdownRef = useRef(null);
+  const volunteerDropdownRef = useRef(null);
 
   const isBloodActive = () =>
     ["/blood/requests", "/blood/donors", "/blood/campaigns"].some(p => location.pathname === p);
@@ -26,6 +28,9 @@ const Navbar = () => {
 
   const isReportActive = () =>
     ["/user/emergency", "/user/emergency/list"].some(p => location.pathname === p);
+
+  const isVolunteerActive = () =>
+    ["/volunteer/opportunities", "/volunteer/list", "/volunteer/leaderboard"].some(p => location.pathname === p);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -43,6 +48,8 @@ const Navbar = () => {
         setSosDropdownOpen(false);
       if (reportDropdownRef.current && !reportDropdownRef.current.contains(e.target))
         setReportDropdownOpen(false);
+      if (volunteerDropdownRef.current && !volunteerDropdownRef.current.contains(e.target))
+        setVolunteerDropdownOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -53,6 +60,7 @@ const Navbar = () => {
     setBloodDropdownOpen(false);
     setSosDropdownOpen(false);
     setReportDropdownOpen(false);
+    setVolunteerDropdownOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => { logout(); navigate("/login"); };
@@ -92,6 +100,12 @@ const Navbar = () => {
   ];
   const adminReportSubLinks = [
     { path: "/admin/reports", label: "Reports", icon: "🚨" },
+  ];
+
+  const volunteerSubLinks = [
+    { path: "/volunteer/opportunities", label: "Opportunities", icon: "🤝" },
+    { path: "/volunteer/list",          label: "Volunteer List", icon: "👥" },
+    { path: "/volunteer/leaderboard",   label: "Leaderboard",   icon: "🏆" },
   ];
 
   const fundSubLinks = role === "admin" ? adminFundSubLinks : userFundSubLinks;
@@ -155,7 +169,7 @@ const Navbar = () => {
         /* ── Shared dropdown wrapper ── */
         .fund-wrap { position:relative; }
 
-        /* ── Trigger button (red variant) ── */
+        /* ── Trigger button ── */
         .fund-trigger {
           display:flex; align-items:center; gap:6px;
           padding:8px 12px; border-radius:10px; cursor:pointer;
@@ -169,12 +183,12 @@ const Navbar = () => {
         }
         .fund-trigger:hover::after,.fund-trigger.active::after { width:60%; }
 
-        /* Red triggers (Reports, SOS Maps) */
+        /* Red triggers */
         .fund-trigger.red::after { background:linear-gradient(90deg,#ff3333,#ff6666); }
         .fund-trigger.red:hover, .fund-trigger.red.open { color:#ff3333; background:rgba(255,51,51,0.06); transform:translateY(-1px); }
         .fund-trigger.red.active { color:#ff3333; background:rgba(255,51,51,0.08); font-weight:600; }
 
-        /* Green triggers (Funding, Blood) */
+        /* Green triggers */
         .fund-trigger.green::after { background:linear-gradient(90deg,#00ff88,#00ccaa); }
         .fund-trigger.green:hover, .fund-trigger.green.open { color:#00ff88; background:rgba(0,255,136,0.06); transform:translateY(-1px); }
         .fund-trigger.green.active { color:#00ff88; background:rgba(0,255,136,0.08); font-weight:600; }
@@ -432,6 +446,40 @@ const Navbar = () => {
                         to={sub.path}
                         className={`fund-menu-item green ${isActive(sub.path) ? "active" : ""}`}
                         onClick={() => setBloodDropdownOpen(false)}
+                      >
+                        <span style={{ fontSize: 16 }}>{sub.icon}</span>
+                        <span>{sub.label}</span>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* ── Volunteer Dropdown ── */}
+          <div className="fund-wrap" ref={volunteerDropdownRef}>
+            <button
+              className={`fund-trigger green ${isVolunteerActive() ? "active" : ""} ${volunteerDropdownOpen ? "open" : ""}`}
+              onClick={(e) => { e.stopPropagation(); setVolunteerDropdownOpen(prev => !prev); }}
+            >
+              <span style={{ fontSize: 15 }}>🤝</span>
+              <span>Volunteer</span>
+              <span className={`fund-arrow ${volunteerDropdownOpen ? "open" : ""}`}>▾</span>
+            </button>
+
+            {volunteerDropdownOpen && (() => {
+              const style = getMenuStyle(volunteerDropdownRef);
+              return (
+                <div className="fund-menu" style={style}>
+                  <div className="fund-menu-header">Volunteer</div>
+                  {volunteerSubLinks.map((sub, idx) => (
+                    <div key={sub.path}>
+                      {idx > 0 && <div className="fund-menu-divider" />}
+                      <Link
+                        to={sub.path}
+                        className={`fund-menu-item green ${isActive(sub.path) ? "active" : ""}`}
+                        onClick={() => setVolunteerDropdownOpen(false)}
                       >
                         <span style={{ fontSize: 16 }}>{sub.icon}</span>
                         <span>{sub.label}</span>
