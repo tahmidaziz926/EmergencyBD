@@ -27,6 +27,9 @@ import { getActiveSOSEvents } from "./services/sosService";
 import BloodRequests from "./pages/User/BloodRequests";
 import BloodDonors from "./pages/User/BloodDonors";
 import BloodCampaigns from "./pages/User/BloodCampaigns";
+import Opportunities from "./pages/Opportunities";
+import VolunteerList from "./pages/VolunteerList";
+import Leaderboard from "./pages/Leaderboard";
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { token, role, loading } = useAuth();
@@ -102,6 +105,11 @@ const AppRoutes = () => {
         {/* Shared */}
         <Route path="/emergency-map" element={<ProtectedRoute><EmergencyMap /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        {/* Volunteer Routes */}
+        <Route path="/volunteer/opportunities" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
+        <Route path="/volunteer/list" element={<ProtectedRoute><VolunteerList /></ProtectedRoute>} />
+        <Route path="/volunteer/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+
         {/* Blood Routes — shared for both roles */}
         <Route path="/blood/requests" element={<ProtectedRoute><BloodRequests /></ProtectedRoute>} />
         <Route path="/blood/donors" element={<ProtectedRoute><BloodDonors /></ProtectedRoute>} />
