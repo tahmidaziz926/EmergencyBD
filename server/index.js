@@ -1,3 +1,4 @@
+
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -9,6 +10,7 @@ import adminRoutes from "./src/routes/adminRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import bloodRoutes from "./src/routes/bloodRoutes.js";
 import volunteerRoutes from "./src/routes/volunteerRoutes.js";
+import sosRoutes from "./src/routes/sosRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -26,6 +28,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/blood", bloodRoutes);
 app.use("/api/volunteer", volunteerRoutes);
+app.use("/api/sos", sosRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`SERVER STARTED on port ${PORT} 🚀`));

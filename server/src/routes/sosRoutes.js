@@ -41,7 +41,7 @@ router.post("/trigger", authMiddleware, async (req, res) => {
 
     await sosEvent.save();
 
-    // Find users within radius — wrapped separately so geo errors never kill the response
+    // Find users within radius
     let notifiedUserIds = [];
     try {
       const radiusInMeters = sosEvent.radius * 1000;
@@ -60,26 +60,16 @@ router.post("/trigger", authMiddleware, async (req, res) => {
       }).select("_id");
       notifiedUserIds = usersInRadius.map((u) => u._id);
     } catch (geoErr) {
-      // Geo query may fail if users don't have location indexed yet — SOS still succeeds
       console.warn("Geo radius query skipped:", geoErr.message);
     }
 
     // Send in-app notifications to users in radius
     if (notifiedUserIds.length > 0) {
       const notifications = notifiedUserIds.map((userId) => ({
-        recipient: userId,
-        type: "sos_alert",
-        category: "Emergency Alert",
+        userId: userId,
+        type: "emergency_alert",
         title: `${typeIcon[emergencyType] || "🚨"} SOS Alert: ${title}`,
         message: `An emergency (${emergencyType}) has been reported near your location. Tap to view on map.`,
-        data: {
-          sosEventId: sosEvent._id,
-          emergencyType,
-          latitude,
-          longitude,
-          address: address || "",
-          radius: sosEvent.radius,
-        },
         priority: "high",
         isRead: false,
       }));
@@ -88,24 +78,15 @@ router.post("/trigger", authMiddleware, async (req, res) => {
       await sosEvent.save();
     }
 
-    // Notify admins too
+    // Notify admins
     try {
       const admins = await User.find({ role: "admin" }).select("_id");
       if (admins.length > 0) {
         const adminNotifs = admins.map((admin) => ({
-          recipient: admin._id,
-          type: "sos_alert",
-          category: "Emergency Alert",
+          userId: admin._id,
+          type: "emergency_alert",
           title: `${typeIcon[emergencyType] || "🚨"} New SOS: ${title}`,
           message: `${description} — ${address || `${latitude}, ${longitude}`}`,
-          data: {
-            sosEventId: sosEvent._id,
-            emergencyType,
-            latitude,
-            longitude,
-            address: address || "",
-            radius: sosEvent.radius,
-          },
           priority: "high",
           isRead: false,
         }));
@@ -197,8 +178,7 @@ router.patch("/:id/resolve", authMiddleware, async (req, res) => {
   }
 });
 
-// ── PATCH /api/sos/location ───────────────────────────────────────────────
-// Update logged-in user's stored location (called on app load)
+// ── PATCH /api/sos/user/location ──────────────────────────────────────────
 router.patch("/user/location", authMiddleware, async (req, res) => {
   try {
     const { latitude, longitude } = req.body;
